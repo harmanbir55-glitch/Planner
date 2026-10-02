@@ -1,5 +1,5 @@
 /* Offline support: keeps the app's own files on the device. */
-const CACHE = "becoming-v3";
+const CACHE = "becoming-v6";
 const FILES = [
   "./", "index.html", "manifest.webmanifest", "css/app.css",
   "js/content.js", "js/growth.js", "js/store.js", "js/art.js", "js/pad.js", "js/app.js",

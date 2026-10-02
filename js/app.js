@@ -1,6 +1,6 @@
 /* Becoming Planner — app shell, routes and every page. */
 (function () {
-  const VERSION = "3";
+  const VERSION = "6";
   const CT = window.CONTENT;
   if (!window.GROWTH) window.GROWTH = { areas: { Read: ["Read 20 pages of a good book"], Learn: ["Learn one new thing today"], Skill: ["Practise your main skill for 20 minutes"] }, words: [["Resilient", "able to recover quickly from difficulty", "A resilient mind treats setbacks as lessons."]], ideas: [["Kaizen", "Small, continuous improvements beat rare big changes."]], habits: [] };
   const START = new Date(2026, 9, 1);
@@ -96,7 +96,8 @@
       case "gratitude": return { name: "gratitude", d: resolveDay(parts[1]), tab: "gratitude" };
       case "manifest": return { name: "manifest", d: resolveDay(parts[1]), tab: "manifest" };
       case "growth": return { name: "growth", d: resolveDay(parts[1]), tab: "growth" };
-      case "year": return { name: "year", tab: "month" };
+      case "focus": return { name: "focus", tab: "focus" };
+      case "year": return { name: "year", tab: "year" };
       case "vision": return { name: "vision", n: +(parts[1] || 1), tab: "vision" };
       case "reading": return { name: "reading", tab: "reading" };
       case "past": return { name: "past", tab: "past" };
@@ -105,47 +106,13 @@
       default: return { name: "home", tab: "home" };
     }
   }
-  const TABS = [["home", "Home", "#/"], ["day", "Today", "#/day/today"], ["journal", "Journal", "#/journal/today"], ["gratitude", "Gratitude", "#/gratitude/today"], ["manifest", "Manifest", "#/manifest/today"], ["growth", "Growth", "#/growth/today"], ["week", "Week", "#/week/this/plan"], ["jobs", "Jobs", "#/week/this/jobs"], ["month", "Month", "#/month/this"], ["vision", "Vision", "#/vision/1"], ["reading", "Reading", "#/reading"], ["past", "Past", "#/past"], ["more", "More", "#/more"]];
+  const TABS = [["home", "Home", "#/"], ["day", "Today", "#/day/today"], ["focus", "Focus", "#/focus"], ["week", "Week", "#/week/this/plan"], ["jobs", "Jobs", "#/week/this/jobs"], ["month", "Month", "#/month/this"], ["year", "Year", "#/year"], ["vision", "Vision", "#/vision/1"], ["journal", "Journal", "#/journal/today"], ["gratitude", "Gratitude", "#/gratitude/today"], ["manifest", "Manifest", "#/manifest/today"], ["growth", "Growth", "#/growth/today"], ["reading", "Reading", "#/reading"], ["past", "Past", "#/past"], ["more", "More", "#/more"]];
 
   // ---------- ui state that isn't saved ----------
   const UI = { pastFilter: "all", pastQuery: "", sel: null, newStars: 0, newColor: 0, armed: null };
   const timer = { mode: "focus", end: 0, left: 25 * 60, running: false, iv: null };
 
   // ================= PAGES =================
-  function pageHome() {
-    const t = today(), s = Store.doc("settings", DEF.settings);
-    const h = new Date().getHours();
-    const greet = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-    const th = themeOf(t);
-    let streak = 0, d = t;
-    if (!Store.has("day:" + ymd(d)) && !Store.has("jour:" + ymd(d))) d = add(d, -1);
-    while (Store.has("day:" + ymd(d)) || Store.has("jour:" + ymd(d))) { streak++; d = add(d, -1); }
-    const S = stats(new Date(t.getFullYear(), t.getMonth(), 1), t);
-    const tiles = [
-      ["Today's plan", "Mood, water, to-dos and schedule", "#/day/today"], ["Morning journal", "Two prompts and your Pencil page", "#/journal/today"],
-      ["Gratitude", S.joys + " joys in this month's jar", "#/gratitude/today"], ["Manifest", "3·6·9, scripting and signs", "#/manifest/today"],
-      ["Growth", "A word, an idea and 3 small moves", "#/growth/today"], ["This week", "Plan and a review that fills itself", "#/week/this/plan"],
-      ["Job search", S.apps + " applications this month", "#/week/this/jobs"], ["This month", th.theme + " · numbers and achievements", "#/month/this/review"],
-      ["Vision board", "Dream it, plan it, build it", "#/vision/1"], ["Reading nook", "Bookshelf, bingo, to-read", "#/reading"], ["Brain dump", "Clear your mind", "#/week/this/dump"], ["Past entries", "Every page you've written", "#/past"],
-    ];
-    const ring = "PLAN · DREAM · READ · BLOOM · GROW · ";
-    return `<div class="stack">
-      <div class="hero">
-        <div class="arch-wrap"><div class="arch-line"></div><div class="arch">${Art.scene("sunrise", seasonOf(t), "Sunrise over green hills")}</div>
-          <svg class="stamp" viewBox="0 0 150 150" aria-hidden="true"><defs><path id="ringPath" d="M75,75 m-52,0 a52,52 0 1,1 104,0 a52,52 0 1,1 -104,0"/></defs><circle cx="75" cy="75" r="72" fill="#3F5B3A"/><circle cx="75" cy="75" r="66" fill="none" stroke="#F6DCC4" stroke-width="1" stroke-dasharray="2 4"/><text font-size="12.5" font-weight="700" letter-spacing="3" fill="#FBF3E6" font-family="DM Sans, sans-serif"><textPath href="#ringPath">${ring}</textPath></text><circle cx="75" cy="75" r="14" fill="#DE8644"/></svg></div>
-        <div class="hero-text"><p class="eyebrow">${th.theme} · ${fmtLong(t)}</p>
-          <span class="hand" style="font-size:30px">the</span><h1 class="becoming">Becoming</h1><div class="planner-line"><i></i>PLANNER<i></i></div>
-          <p class="tagline">slow mornings · soft plans · big dreams · good books</p>
-          <p class="greet">${greet}, <span class="hand" style="font-size:30px">${esc(s.name || "friend")}</span></p>
-          <div class="row" style="margin-top:12px;justify-content:center"><span class="tag">${streak} day streak</span><span class="tag j">${S.days} days planned this month</span><span class="tag w">${S.growth} growth moves</span></div></div>
-      </div>
-      ${ritualCard()}
-      <div class="g3">${tiles.map(([b, s2, h2]) => `<a class="tile-link" href="${h2}"><b>${b}</b><span>${esc(s2)}</span></a>`).join("")}</div>
-      ${foot("She believed she could, so she planned it.")}
-      <p class="muted" style="text-align:center;font-size:12px;margin:0">version ${VERSION}</p>
-    </div>`;
-  }
-
   function dateBar(base, d) {
     const iso = ymd(d);
     return `<div class="datebar" style="margin-top:14px">
@@ -166,7 +133,7 @@
     const ENERGY = ["Running on empty", "Low", "Steady", "Good", "Unstoppable"];
     return `<div class="stack">
       ${head(`Daily page · ${th.theme}`, fmtLong(d), `${d.getFullYear()} · week ${isoWeek(d)}${ds === ymd(today()) ? " · today" : ""}`, Art.scene(motifOf(aff, th.motif), seasonOf(d), "Picture for today's affirmation"), dateBar("day", d))}
-      ${pills([["Journal", "#/journal/" + ds], ["Gratitude", "#/gratitude/" + ds], ["Manifest", "#/manifest/" + ds], ["Growth", "#/growth/" + ds], ["Week plan", `#/week/${ymd(mondayOf(d))}/plan`], ["Job search", `#/week/${ymd(mondayOf(d))}/jobs`], ["Month", `#/month/${ym(d)}`]])}
+      ${pills([["Focus timer", "#/focus"], ["Journal", "#/journal/" + ds], ["Gratitude", "#/gratitude/" + ds], ["Manifest", "#/manifest/" + ds], ["Growth", "#/growth/" + ds], ["Week plan", `#/week/${ymd(mondayOf(d))}/plan`], ["Job search", `#/week/${ymd(mondayOf(d))}/jobs`], ["Month", `#/month/${ym(d)}`]])}
       ${banner("Today's affirmation", aff)}
       <div class="g2">
         <section class="card"><div class="between"><h2 class="h">How am I feeling?</h2><span class="muted">tap one</span></div>
@@ -209,24 +176,36 @@
     const ds = ymd(d), k = "jour:" + ds, D = doc(k), i = dayIdx(d);
     const th = themeOf(d), aff = affOf(d);
     let jm = pick(ALT, i * 5 + 3); if (jm === motifOf(aff, th.motif)) jm = pick(ALT, i * 5 + 4);
-    const q1 = pick(CT.morning, i * 2), q2 = pick(CT.morning, i * 2 + 37);
+    const MP = CT.morning.filter((q) => !/feel/i.test(q));
+    const q1 = pick(MP, i * 2), q2 = pick(MP, i * 2 + 37);
     const routine = ["Water first", "Made bed", "Stretched", "Sunlight", "No phone 30 min", "Read 10 pages"];
+    const FEELS = ["Calm", "Focused", "Confident", "Joyful", "Energised", "Grateful", "Brave", "Peaceful"];
+    const mDone = !!D.feel;
     const g = Store.peek("grat:" + ds), m = Store.peek("mani:" + ds), gr = Store.peek("grow:" + ds);
     const joys = g && g.items ? g.items.length : 0, dots = m && m.dots ? Object.values(m.dots).filter(Boolean).length : 0, moves = gr && gr.done ? Object.values(gr.done).filter(Boolean).length : 0;
     return `<div class="stack">
       ${head("Daily journal · " + fmtLong(d), "Morning pages", null, Art.scene(jm, seasonOf(d), "Journal picture"), `<p class="hand" style="margin:8px 0 0">Today's intention: ${esc(pick(CT.intentions, i))}</p>` + dateBar("journal", d))}
       ${banner("Today's affirmation", aff)}
-      <section class="card"><div class="between"><div class="label">Morning journal</div><label class="muted">Woke up at ${inp(k, "wake", "", "boxinput", "time", "Wake-up time")}</label></div>
-        <p class="prompt">${esc(q1)}</p>${ta(k, "a1", "", 3, q1)}
-        <p class="prompt">${esc(q2)}</p>${ta(k, "a2", "", 3, q2)}
-        <div class="row" style="margin-top:12px;gap:6px">${routine.map((r) => `<button type="button" class="chip" data-act="toggle" ${B(k, "routine." + r)} aria-pressed="${!!D.routine[r]}">${r}</button>`).join("")}</div></section>
+      <section class="card morning">
+        <div class="between"><div><div class="label">Morning check-in</div><h2 class="h" style="font-style:italic;font-weight:400;font-size:24px;margin-top:4px">${mDone ? "Morning set. Go have a beautiful day." : "Two taps and one line. That's it."}</h2></div><label class="muted">Woke up at ${inp(k, "wake", "", "boxinput", "time", "Wake-up time")}</label></div>
+        <p class="prompt">Today I want to feel…</p>
+        <div class="row" style="gap:6px">${FEELS.map((f) => `<button type="button" class="chip feel" data-act="set" ${B(k, "feel")} data-val='"${f}"' data-same='""' aria-pressed="${D.feel === f}">${f}</button>`).join("")}</div>
+        <p class="prompt">${esc(q1)}</p>
+        ${inp(k, "a1", "One line is enough…", "lineinput", "text", q1)}
+        <p class="prompt" style="font-size:15px">Morning routine</p>
+        <div class="row" style="gap:6px">${routine.map((r) => `<button type="button" class="chip" data-act="toggle" ${B(k, "routine." + r)} aria-pressed="${!!D.routine[r]}">${r}</button>`).join("")}</div>
+        ${D.feel ? `<p class="hand" style="margin:14px 0 0">${esc(pick(CHEERS, i))} You chose to feel ${esc(D.feel.toLowerCase())} today.</p><div style="margin-top:10px">${nextStep("morning")}</div>` : ""}
+      </section>
       <div class="g3">
-        <a class="tile-link" href="#/gratitude/${ds}" style="background:var(--peach);border-color:var(--peach)"><b>Gratitude</b><span>${joys ? joys + " joys added today" : "Add a joy to your jar"}</span></a>
-        <a class="tile-link" href="#/manifest/${ds}" style="background:var(--sagel);border-color:var(--sagel)"><b>Manifest</b><span>${dots} of 18 affirmations written</span></a>
-        <a class="tile-link" href="#/growth/${ds}" style="background:var(--sand);border-color:var(--sand)"><b>Growth</b><span>${moves} of 3 growth moves done</span></a>
+        <a class="tile-link" href="#/gratitude/${ds}" style="background:var(--peach);border-color:var(--peach)"><b>Gratitude</b><span>${joys ? "Done for today" : "Drop one joy in your jar"}</span></a>
+        <a class="tile-link" href="#/manifest/${ds}" style="background:var(--sagel);border-color:var(--sagel)"><b>Manifest</b><span>${dots >= 3 ? "Done for today" : "Say your affirmation 3 times"}</span></a>
+        <a class="tile-link" href="#/growth/${ds}" style="background:var(--sand);border-color:var(--sand)"><b>Growth</b><span>${moves ? "Done for today" : "One small growth move"}</span></a>
       </div>
-      <section class="card"><div class="between"><h2 class="h">Write by hand</h2><span class="muted">Apple Pencil page for today</span></div>
-        <div data-pad="j-${ds}" data-height="420" data-paper="lines" data-hint="write, sketch or doodle anything"></div></section>
+      <details class="card more-write" data-ui-open="moreWrite" ${UI.moreWrite ? "open" : ""}>
+        <summary><span><b>Want to write more?</b><span class="muted" style="display:block;margin-top:2px">Optional. A deeper prompt and your Apple Pencil page.</span></span><span class="pill">Open</span></summary>
+        <p class="prompt">${esc(q2)}</p>${ta(k, "a2", "", 3, q2)}
+        <div style="margin-top:14px" data-pad="j-${ds}" data-height="420" data-paper="lines" data-hint="write, sketch or doodle anything"></div>
+      </details>
       ${foot(pick(CT.intentions, i + 5))}
     </div>`;
   }
@@ -295,11 +274,7 @@
         <div class="g-wide">
           <section class="card"><h2 class="h">The one thing I'll focus on next</h2>${inp(k, "focusNext", "Just one. The rest can wait.", "big-input")}
             <p class="hand" style="margin:14px 0 0">${esc(pick(CT.weeklyAffs, wi + 7))}</p></section>
-          <section class="card peach" style="text-align:center"><h2 class="h">Focus timer</h2>
-            <div class="ringwrap" style="width:150px;height:150px;margin:10px auto 0"><svg width="150" height="150" viewBox="0 0 150 150" style="transform:rotate(-90deg)"><circle cx="75" cy="75" r="60" fill="none" stroke="#E9BE98" stroke-width="10"/><circle id="tRing" cx="75" cy="75" r="60" fill="none" stroke="#3F5B3A" stroke-width="10" stroke-linecap="round" stroke-dasharray="${((1 - left / total) * C).toFixed(1)} ${C.toFixed(1)}"/></svg>
-              <div class="mid" role="timer"><b id="tLabel">${fmtTime(left)}</b><span class="muted" style="color:var(--terra2);font-weight:700">${timer.mode === "focus" ? "DEEP FOCUS" : "BREATHE"}</span></div></div>
-            <div class="row" style="justify-content:center;margin-top:10px"><button class="btn dark" data-act="timerGo">${timer.running ? "Pause" : "Start"}</button><button class="btn ghost" data-act="timerReset">Reset</button></div>
-            <div class="row" style="justify-content:center;margin-top:8px"><button class="chip" data-act="timerMode" data-m="focus" aria-pressed="${timer.mode === "focus"}">Focus 25</button><button class="chip" data-act="timerMode" data-m="break" aria-pressed="${timer.mode === "break"}">Break 5</button></div></section>
+          <a class="tile-link" href="#/focus" style="background:var(--peach);border-color:var(--peach);justify-content:center"><b>Focus timer</b><span>Pick one task and focus for 25 minutes</span></a>
         </div></div>`;
     }
     // plan
@@ -466,8 +441,9 @@
     Store.keys("grat:").forEach((key) => { const d = parse(key.slice(5)), g = Store.peek(key); if (g && g.items && g.items.length) add2("gratitude", "Gratitude", "j", d, fmtLong(d) + ", " + d.getFullYear() + " · " + g.items.length + " joys", "#/gratitude/" + key.slice(5), g.items); });
     Store.keys("mani:").forEach((key) => { const d = parse(key.slice(5)); add2("manifest", "Manifest", "", d, fmtLong(d) + ", " + d.getFullYear(), "#/manifest/" + key.slice(5), Store.peek(key)); });
     Store.keys("grow:").forEach((key) => { const d = parse(key.slice(5)); add2("growth", "Growth", "w", d, fmtLong(d) + ", " + d.getFullYear(), "#/growth/" + key.slice(5), Store.peek(key)); });
+    Store.keys("focus:").forEach((key) => { const d = parse(key.slice(6)), f = Store.peek(key); if (f && f.sessions && f.sessions.length) add2("focus", "Focus", "w", d, fmtLong(d) + ", " + d.getFullYear() + " · " + hm(f.sessions.reduce((x, s) => x + (+s.min || 0), 0)), "#/focus", f.sessions.map((s) => s.task)); });
     Store.keys("month:").forEach((key) => { const d = parse(key.slice(6) + "-01"); add2("month", "Month", "w", d, monthName(d) + " " + d.getFullYear(), "#/month/" + key.slice(6), Store.peek(key)); });
-    const F = [["all", "Everything"], ["planner", "Planner"], ["journal", "Journal"], ["gratitude", "Gratitude"], ["manifest", "Manifest"], ["growth", "Growth"], ["week", "Weeks"], ["jobs", "Job search"], ["dump", "Brain dumps"], ["month", "Months"]];
+    const F = [["all", "Everything"], ["planner", "Planner"], ["journal", "Journal"], ["gratitude", "Gratitude"], ["manifest", "Manifest"], ["growth", "Growth"], ["focus", "Focus"], ["week", "Weeks"], ["jobs", "Job search"], ["dump", "Brain dumps"], ["month", "Months"]];
     const q = UI.pastQuery.trim().toLowerCase();
     const shown = items.filter((x) => (UI.pastFilter === "all" || x.type === UI.pastFilter) && (!q || x.all.includes(q) || x.title.toLowerCase().includes(q))).sort((a, b) => b.date - a.date);
     let lastM = "", list = "";
@@ -496,6 +472,8 @@
         <section class="card green"><h2 class="h">Back up</h2><p style="color:#DCE4CF;margin:8px 0 14px">Saves one file with every page, photo and drawing. On iPad, choose “Save to Files”.</p><button class="btn" data-act="backup">Download backup</button></section>
         <section class="card peach"><h2 class="h">Restore</h2><p class="muted" style="color:var(--terra2);margin:8px 0 14px">Open a backup file to bring your pages to this device (from your MacBook to your iPad, for example).</p><label class="btn dark" style="display:inline-flex;align-items:center">Choose backup file<input type="file" accept="application/json,.json" class="sr" data-restore></label></section>
       </div>
+      <section class="card"><div class="between"><div><h2 class="h">Sounds</h2><p class="muted" style="margin:6px 0 0">A soft chime when you tick something off. If you hear nothing, check that your iPad isn't on silent.</p></div>
+        <button class="chip" data-act="soundToggle" aria-pressed="${s.sound !== false}">${s.sound !== false ? "Sounds on" : "Sounds off"}</button></div></section>
       <section class="card sage"><h2 class="h">Apple Pencil</h2><p class="muted" style="margin:8px 0 12px">With “Pencil only” on, your finger scrolls the page and only the Pencil writes on drawing pads. It turns on by itself the first time you use the Pencil.</p>
         <button class="chip" data-act="toggle" data-doc="settings" data-path="pencilOnly" aria-pressed="${!!s.pencilOnly}">Pencil only</button></section>
       <section class="card"><h2 class="h">Storage</h2><p class="muted" id="storageLine">Checking storage…</p></section>
@@ -506,7 +484,7 @@
 
   // ================= AUTO STATS =================
   function stats(from, to) {
-    const S = { total: 0, days: 0, journal: 0, water: [], move: 0, sleep: [], todo: 0, todoAll: 0, top3: 0, moods: {}, stars: [], best: null, wins: [], joys: 0, dots: 0, growth: 0, learned: [], apps: 0, books: 0, perDay: [] };
+    const S = { focus: 0, sessions: 0, total: 0, days: 0, journal: 0, water: [], move: 0, sleep: [], todo: 0, todoAll: 0, top3: 0, moods: {}, stars: [], best: null, wins: [], joys: 0, dots: 0, growth: 0, learned: [], apps: 0, books: 0, perDay: [] };
     for (let d = new Date(from); d <= to; d = add(d, 1)) {
       const ds = ymd(d); S.total++;
       const day = Store.has("day:" + ds) ? Store.peek("day:" + ds) : null;
@@ -524,6 +502,7 @@
         if (w.length) S.wins.push({ d: new Date(d), t: w.join(" · ") });
       }
       if (pd.jour) S.journal++;
+      const fo = Store.peek("focus:" + ds); if (fo && fo.sessions) { S.sessions += fo.sessions.length; S.focus += fo.sessions.reduce((x, s) => x + (+s.min || 0), 0); }
       S.joys += pd.joys; S.dots += pd.dots; S.growth += pd.moves;
       if (gr && (gr.learned || "").trim()) S.learned.push({ d: new Date(d), t: gr.learned });
     }
@@ -553,10 +532,10 @@
       <div class="g4" style="margin-top:14px">
         ${stat(avg(S.water).toFixed(1), "glasses", "water a day on average", "sage")}
         ${stat(S.move, "min", "movement this week", "peach")}
-        ${stat(S.sleep.length ? avg(S.sleep).toFixed(1) : "–", "h", "sleep a night on average", "sand")}
+        ${stat(hm(S.focus), "", S.sessions + " focus sessions", "sand")}
         ${stat(S.todo + "/" + S.todoAll, "", `to-dos done · ${S.top3} Top 3 wins`, "sage")}
         ${stat(S.joys, "joys", "added to your gratitude jar", "peach")}
-        ${stat(S.dots, "/ 126", "3·6·9 affirmations written", "sage")}
+        ${stat(S.dots, "times", "affirmations said out loud", "sage")}
         ${stat(S.growth, "moves", "growth moves completed", "sand")}
         ${stat(S.apps, "sent", "job applications", "peach")}
       </div>
@@ -571,7 +550,7 @@
     const moodTotal = Object.values(S.moods).reduce((a, b) => a + b, 0);
     const BADGES = [
       ["Consistent", "Planned 20+ days", S.days >= 20], ["Morning person", "Journaled 15+ mornings", S.journal >= 15],
-      ["Hydration hero", "7+ glasses a day on average", S.days >= 7 && avg(S.water) >= 7], ["Mover", "10+ hours of movement", S.move >= 600],
+      ["Deep worker", "10+ hours of focus", S.focus >= 600], ["Mover", "10+ hours of movement", S.move >= 600],
       ["Grateful heart", "30+ joys in the jar", S.joys >= 30], ["Manifestor", "150+ 3·6·9 affirmations", S.dots >= 150],
       ["Lifelong learner", "40+ growth moves", S.growth >= 40], ["Bookworm", "Finished 2+ books", S.books >= 2], ["Job hunter", "Sent 20+ applications", S.apps >= 20],
     ];
@@ -582,7 +561,7 @@
         ${stat(S.journal, "mornings", "journaled", "peach")}${stat(S.joys, "joys", "in your gratitude jar", "sage")}
         ${stat(S.growth, "moves", "growth moves done", "sand")}${stat(S.apps, "sent", "job applications", "peach")}
         ${stat(S.books, "books", "finished this month", "sage")}${stat((S.move / 60).toFixed(1), "h", "of movement", "sand")}
-        ${stat(avg(S.water).toFixed(1), "glasses", "water a day on average", "sage")}${stat(S.todo, "to-dos", `done · ${S.top3} Top 3 wins`, "peach")}
+        ${stat(hm(S.focus), "", "focused · " + S.sessions + " sessions", "sage")}${stat(S.todo, "to-dos", `done · ${S.top3} Top 3 wins`, "peach")}
       </div>
       ${moodTotal ? `<div style="margin-top:16px"><div class="label">Mood this month</div><div class="moodbar">${Object.keys(MOODC).filter((k) => S.moods[k]).map((k) => `<i style="flex:${S.moods[k]};background:${MOODC[k]}" title="${MOODN[k]}"></i>`).join("")}</div>
         <div class="row" style="margin-top:8px;font-size:13px;color:var(--muted)">${Object.keys(MOODC).filter((k) => S.moods[k]).map((k) => `<span class="row" style="gap:6px"><i style="width:12px;height:12px;border-radius:3px;background:${MOODC[k]};display:inline-block"></i>${MOODN[k]} ${S.moods[k]}</span>`).join("")}</div></div>` : ""}
@@ -596,7 +575,18 @@
     </div>`;
   }
 
-  // ================= GRATITUDE =================
+  // ================= ONE-THING PAGES =================
+  function oneThing(done, title, doneText, body, next) {
+    return `<section class="card onething ${done ? "done" : ""}">
+      <div class="between" style="align-items:center"><div><div class="label">Today's one thing</div><h2 class="h" style="font-size:24px;font-style:italic;font-weight:400;margin-top:4px">${done ? doneText : title}</h2></div>
+        <span class="bigtick" aria-label="${done ? "Done for today" : "Not done yet"}">${done ? Art.check.replace('width="13" height="13"', 'width="26" height="26"') : ""}</span></div>
+      ${body}${done && next ? `<div style="margin-top:14px">${nextStep(next)}</div>` : ""}</section>`;
+  }
+  function extras(key, inner) {
+    return `<details class="card more-write" data-ui-open="${key}" ${UI[key] ? "open" : ""}>
+      <summary><span><b>Extra, only if you feel like it</b><span class="muted" style="display:block;margin-top:2px">Nothing here is required.</span></span><span class="pill">Open</span></summary>${inner}</details>`;
+  }
+
   function pageGratitude(d) {
     const ds = ymd(d), k = "grat:" + ds, D = doc(k), i = dayIdx(d);
     let joys = []; const first = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -605,93 +595,83 @@
     const n = Math.min(joys.length, 63);
     const pebbles = rows(n, (_, j) => { const row = Math.floor(j / 7), col = j % 7, jit = ((j * 37) % 9) - 4; return `<i class="${UI.drop && j === n - 1 ? "drop" : ""}" style="left:${10 + col * 25 + (row % 2) * 11 + jit}px;bottom:${8 + row * 21 + ((j * 13) % 5)}px;background:${COLS[j % COLS.length]}"></i>`; }).join("");
     UI.drop = false;
-    const STARTERS = ["A person…", "A small moment…", "My body…", "Something I learned…", "A place…", "A comfort…"];
-    const today_p = pick(CT.gratitude, i * 3);
+    const done = D.items.length > 0;
     return `<div class="stack">
-      ${head("Gratitude journal · " + fmtLong(d), "Thank you, life", "What I appreciate, appreciates.", Art.scene("leaf", seasonOf(d), "Autumn leaves"), dateBar("gratitude", d))}
-      <div class="g-wide" style="grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)">
+      ${head("Gratitude · " + fmtLong(d), "Thank you, life", "What I appreciate, appreciates.", Art.scene("leaf", seasonOf(d), "Autumn leaves"), dateBar("gratitude", d))}
+      <div class="g-wide" style="grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)">
+        ${oneThing(done, "Drop one joy in your jar", "Your jar got a little fuller today.",
+          `<p class="muted" style="margin:8px 0 0">Tap one, or write your own.</p>
+          <div class="row" style="gap:6px;margin-top:10px">${QUICKJOYS.map((q) => `<button class="chip" data-act="quickJoyOn" data-ds="${ds}" data-v="${q}">${q}</button>`).join("")}</div>
+          <div class="addrow"><input id="newGrat" class="boxinput" placeholder="${esc(pick(CT.gratitude, i * 3))}" aria-label="Something I'm grateful for" data-enter="addGrat"><button id="addGrat" class="btn" data-act="push" ${B(k, "items")} data-from="newGrat" data-drop="1">Add</button></div>
+          ${D.items.length ? `<div style="margin-top:8px">${D.items.map((t, j) => `<div class="item"><i class="dot" style="background:${COLS[j % COLS.length]}"></i><span class="txt">${esc(t.t)}</span><button class="x" data-act="del" ${B(k, "items")} data-i="${j}" aria-label="Remove">×</button></div>`).join("")}</div>` : ""}`, "joy")}
         <section class="card sage jarcard"><h2 class="h">My joy jar</h2>
           <div class="lid"></div><div class="neck"></div>
-          <div class="jar big" role="img" aria-label="Joy jar with ${joys.length} entries this month">${pebbles}<span class="jarlabel">little joys</span></div>
-          <p class="jarcount">${joys.length === 1 ? "1 little joy" : joys.length + " little joys"} in ${monthName(d)}</p>
-          <p class="muted" style="margin:2px 0 0">Every entry drops a pebble in the jar.</p></section>
-        <section class="card"><h2 class="h">Today I'm grateful for…</h2>
-          <div class="row" style="gap:6px;margin-top:12px">${STARTERS.map((s) => `<button class="chip" data-act="fill" data-target="newGrat" data-v="${s.replace("…", ": ")}">${s}</button>`).join("")}</div>
-          <p class="muted" style="margin:12px 0 0">Today's prompt: <a href="#" data-act="fill" data-target="newGrat" data-v="${esc(today_p.replace(/:$/, ": "))}">${esc(today_p)}</a></p>
-          <div class="addrow"><input id="newGrat" class="boxinput" placeholder="The way the light came through the window…" aria-label="Something I'm grateful for" data-enter="addGrat"><button id="addGrat" class="btn" data-act="push" ${B(k, "items")} data-from="newGrat" data-drop="1">Add</button></div>
-          <div style="margin-top:6px">${D.items.length ? D.items.map((t, j) => `<div class="item"><i class="dot" style="background:${COLS[j % COLS.length]}"></i><span class="txt">${esc(t.t)}</span><button class="x" data-act="del" ${B(k, "items")} data-i="${j}" aria-label="Remove">×</button></div>`).join("") : `<p class="hand" style="color:#B7AE99;text-align:center;margin:22px 0">your first little joy goes here</p>`}</div></section>
+          <div class="jar big" role="img" aria-label="Joy jar with ${joys.length} joys this month">${pebbles}<span class="jarlabel">little joys</span></div>
+          <p class="jarcount">${joys.length === 1 ? "1 little joy" : joys.length + " little joys"} in ${monthName(d)}</p></section>
       </div>
       ${foot("I have so much, and more is on its way.")}</div>`;
   }
 
-  // ================= MANIFEST =================
   function pageManifest(d) {
     const ds = ymd(d), k = "mani:" + ds, D = doc(k), G = doc("manifest"), i = dayIdx(d);
-    const ROWS = [["m", "Morning", 3, "o"], ["a", "Afternoon", 6, "s"], ["n", "Night", 9, "f"]];
-    const done = Object.values(D.dots).filter(Boolean).length;
-    const sp = pick(CT.manifest, i * 7);
+    const said = ["m0", "m1", "m2"].filter((x) => D.dots[x]).length, done = said === 3;
+    const affText = (D.aff || "").trim() || affOf(d);
+    const ROWS = [["a", "Afternoon", 6, "s"], ["n", "Night", 9, "f"]];
     return `<div class="stack">
-      ${head("Manifestation journal · " + fmtLong(d), "Speak it into being", "Write it. Believe it. Act as if it's already yours.", `<svg viewBox="0 0 300 180" class="sunspin" aria-hidden="true"><rect width="300" height="180" fill="#FBF8F1"/><g stroke="#6F8A62" stroke-width="5" stroke-linecap="round"><path d="M150 30v18M150 132v18M80 90h18M202 90h18M100 40l12 12M188 128l12 12M200 40l-12 12M112 128l-12 12"/></g><circle cx="150" cy="90" r="30" fill="#DE8644"/></svg>`, dateBar("manifest", d))}
-      <section class="card green"><div class="label">I am manifesting</div>
-        ${inp("manifest", "main", "My dream, written as if it's already true…", "big-input")}
-        <div class="g2" style="margin-top:10px"><label style="color:#DCE4CF;font-size:14px">By when<br>${inp("manifest", "by", "", "boxinput", "date", "By when")}</label><label style="color:#DCE4CF;font-size:14px">Why it matters to me${inp("manifest", "why", "", "lineinput", "text", "Why it matters")}</label></div></section>
-      <section class="card"><div class="between"><h2 class="h">The 3 · 6 · 9 method</h2><span class="muted">${done} of 18 written</span></div>
-        <p class="muted" style="margin:6px 0 0">Write your affirmation 3 times in the morning, 6 in the afternoon and 9 at night. Tap a circle each time.</p>
-        ${inp(k, "aff", "I am so happy and grateful now that…", "boxinput aff369", "text", "My affirmation")}
-        ${D.aff ? "" : `<button class="chip" style="margin-top:8px" data-act="setText" ${B(k, "aff")} data-v="${esc(affOf(d))}">Use today's: “${esc(affOf(d))}”</button>`}
-        ${ROWS.map(([id, l, nn, c]) => `<div class="row369"><span class="l ${c}">${l} · ${nn}</span><div class="dots-row">${rows(nn, (_, j) => `<button class="dot369 ${c}" data-act="toggle" ${B(k, `dots.${id}${j}`)} aria-pressed="${!!D.dots[id + j]}" aria-label="${l} ${j + 1}"><span></span></button>`).join("")}</div></div>`).join("")}
-        ${done >= 18 ? `<p class="hand" style="margin:10px 0 0">All 18 written. It's on its way to you.</p>` : ""}</section>
-      <section class="card peach"><h2 class="h">Scripting · write it as if it already happened</h2><p class="muted" style="color:var(--terra2);margin:6px 0 0">${esc(sp)}</p>${ta(k, "script", "Dear Universe, thank you for…", 5)}</section>
-      <div class="g-wide">
-        <section class="card"><h2 class="h">Rewrite the old story</h2>
-          <div class="belief head2"><span>Old belief</span><span></span><span style="color:var(--forest)">New belief</span></div>
-          ${G.beliefs.map((b, j) => `<div class="belief"><input class="lineinput old" ${B("manifest", `beliefs.${j}.o`)} value="${esc(b.o)}" placeholder="${["I never finish what I start", "I am not good enough yet", "Money is hard to come by"][j]}" aria-label="Old belief ${j + 1}"><span class="arrow">→</span><input class="lineinput new" ${B("manifest", `beliefs.${j}.n`)} value="${esc(b.n)}" placeholder="${["I follow through, one step at a time", "I am enough, and I keep growing", "Opportunities find me easily"][j]}" aria-label="New belief ${j + 1}"></div>`).join("")}</section>
-        <section class="card sage"><h2 class="h">Signs I'm on my way</h2>
-          <div class="addrow"><input id="newSign" class="boxinput" placeholder="111 on the clock, a kind email…" aria-label="A sign I noticed" data-enter="addSign"><button id="addSign" class="btn dark" data-act="push" data-doc="manifest" data-path="signs" data-from="newSign" data-extra='{"date":"${fmtShort(d)}"}'>Add</button></div>
-          ${G.signs.slice().reverse().slice(0, 12).map((s) => { const j = G.signs.indexOf(s); return `<div class="item">${Art.starIcon(14, "#DE8644")}<span class="txt" style="padding-left:8px">${esc(s.t)} <small class="muted">· ${esc(s.date || "")}</small></span><button class="x" data-act="del" data-doc="manifest" data-path="signs" data-i="${j}" aria-label="Remove">×</button></div>`; }).join("")}</section>
-      </div>
-      <a class="tile-link" href="#/vision/1" style="border-color:var(--orange);flex-direction:row;justify-content:space-between;align-items:center;min-height:0"><span><b>Ready to see it? Build your vision board</b><br><span>Dream it, plan it, then create your board with photos and your Pencil.</span></span>${arrow(1)}</a>
+      ${head("Manifest · " + fmtLong(d), "Speak it into being", "Say it. Believe it. Act as if it's already yours.", `<svg viewBox="0 0 300 180" class="sunspin" aria-hidden="true"><rect width="300" height="180" fill="#FBF8F1"/><g stroke="#6F8A62" stroke-width="5" stroke-linecap="round"><path d="M150 30v18M150 132v18M80 90h18M202 90h18M100 40l12 12M188 128l12 12M200 40l-12 12M112 128l-12 12"/></g><circle cx="150" cy="90" r="30" fill="#DE8644"/></svg>`, dateBar("manifest", d))}
+      ${oneThing(done, "Say your affirmation out loud, 3 times", "Said three times. It's on its way to you.",
+        `<p class="affbig">“${esc(affText)}”</p>
+        <div class="row" style="gap:14px;margin-top:6px">${["m0", "m1", "m2"].map((x, j) => `<button class="dot369 big o" data-act="toggle" ${B(k, "dots." + x)} aria-pressed="${!!D.dots[x]}" aria-label="Said it ${j + 1}"><span></span></button>`).join("")}<span class="muted">tap a circle each time you say it</span></div>`, "said")}
+      ${extras("maniExtra", `
+        <div class="card green" style="margin-top:14px"><div class="label">I am manifesting</div>${inp("manifest", "main", "My dream, written as if it's already true…", "big-input")}
+          <div class="g2" style="margin-top:8px"><label style="color:#DCE4CF;font-size:14px">By when<br>${inp("manifest", "by", "", "boxinput", "date", "By when")}</label><label style="color:#DCE4CF;font-size:14px">Why it matters${inp("manifest", "why", "", "lineinput", "text", "Why it matters")}</label></div></div>
+        <p class="prompt">Use my own affirmation instead</p>${inp(k, "aff", affOf(d), "boxinput aff369", "text", "My own affirmation")}
+        <p class="prompt">Want to keep going? The full 3·6·9</p>
+        ${ROWS.map(([id, l, nn, c]) => `<div class="row369"><span class="l ${c}">${l}</span><div class="dots-row">${rows(nn, (_, j) => `<button class="dot369 ${c}" data-act="toggle" ${B(k, `dots.${id}${j}`)} aria-pressed="${!!D.dots[id + j]}" aria-label="${l} ${j + 1}"><span></span></button>`).join("")}</div></div>`).join("")}
+        <p class="prompt">${esc(pick(CT.manifest, i * 7))}</p>${ta(k, "script", "Dear Universe, thank you for…", 3)}
+        <p class="prompt">Signs I'm on my way</p>
+        <div class="addrow" style="margin-top:4px"><input id="newSign" class="boxinput" placeholder="111 on the clock, a kind email…" aria-label="A sign I noticed" data-enter="addSign"><button id="addSign" class="btn dark" data-act="push" data-doc="manifest" data-path="signs" data-from="newSign" data-extra='{"date":"${fmtShort(d)}"}'>Add</button></div>
+        ${G.signs.slice().reverse().slice(0, 6).map((s) => `<div class="item">${Art.starIcon(14, "#DE8644")}<span class="txt" style="padding-left:8px">${esc(s.t)} <small class="muted">· ${esc(s.date || "")}</small></span></div>`).join("")}
+        <p class="prompt">Rewrite the old story</p>
+        ${G.beliefs.map((b, j) => `<div class="belief"><input class="lineinput old" ${B("manifest", `beliefs.${j}.o`)} value="${esc(b.o)}" placeholder="${["I never finish what I start", "I am not good enough yet", "Money is hard to come by"][j]}" aria-label="Old belief ${j + 1}"><span class="arrow">→</span><input class="lineinput new" ${B("manifest", `beliefs.${j}.n`)} value="${esc(b.n)}" placeholder="${["I follow through, one step at a time", "I am enough, and I keep growing", "Opportunities find me easily"][j]}" aria-label="New belief ${j + 1}"></div>`).join("")}`)}
       ${foot("What is meant for me is already finding its way to me.")}</div>`;
   }
 
-  // ================= GROWTH =================
   function pageGrowth(d) {
     const ds = ymd(d), k = "grow:" + ds, D = doc(k), i = dayIdx(d), G = window.GROWTH;
     const areas = Object.keys(G.areas);
     const picks = [0, 1, 2].map((j) => { const a = areas[mod(i * 3 + j, areas.length)]; return [a, pick(G.areas[a], Math.floor((i * 3 + j) / areas.length) + j)]; });
     const [word, meaning, example] = pick(G.words, i);
     const [idea, ideaText] = pick(G.ideas, i);
-    const doneN = picks.filter((_, j) => D.done[j]).length;
-    const m1 = new Date(d.getFullYear(), d.getMonth(), 1), S = stats(m1, new Date(d.getFullYear(), d.getMonth() + 1, 0));
-    const recent = []; for (let x = add(d, -1); recent.length < 6 && x > add(d, -60); x = add(x, -1)) { const g = Store.peek("grow:" + ymd(x)); if (g && (g.learned || "").trim()) recent.push({ d: x, t: g.learned }); }
+    const done = !!D.done[0] || !!D.done[1] || !!D.done[2];
     return `<div class="stack">
-      ${head("Growth · " + fmtLong(d), "A little more every day", "Three small moves a day adds up to about a thousand a year.", Art.scene("sprout", seasonOf(d), "Sprout"), dateBar("growth", d))}
-      <div class="banner"><div class="label">Today's big idea · ${esc(idea)}</div><p>${esc(ideaText)}</p>${Art.sparkle}</div>
-      <div class="g-wide">
-        <section class="card"><div class="between"><h2 class="h">Today's 3 growth moves</h2><span class="tag">${doneN} of 3</span></div>
-          ${picks.map(([a, t], j) => `<div class="item ${D.done[j] ? "done" : ""}">${chk(k, "done." + j, t, true)}<span class="txt"><small class="label" style="display:block;color:var(--sage2)">${a}</small>${esc(t)}</span></div>`).join("")}
-          <p class="hand" style="margin:12px 0 0">${doneN === 3 ? "All three done. That's how she becomes her." : S.growth + " growth moves so far in " + monthName(d)}</p></section>
+      ${head("Growth · " + fmtLong(d), "A little more every day", "One small move a day adds up to 365 a year.", Art.scene("sprout", seasonOf(d), "Sprout"), dateBar("growth", d))}
+      ${oneThing(done, "One small growth move", "Done. You're a little more than yesterday.",
+        `<p class="label" style="color:var(--sage2);margin:12px 0 0">${picks[0][0]}</p><p class="affbig" style="margin-top:4px">${esc(picks[0][1])}</p>
+        <button class="btn ${D.done[0] ? "dark" : ""}" data-act="toggle" ${B(k, "done.0")}>${D.done[0] ? "Done!" : "I did it"}</button>`, "move")}
+      <div class="g2">
         <section class="card peach"><div class="label" style="color:var(--terra2)">Word of the day</div>
-          <p style="margin:8px 0 0;font-family:var(--display);font-style:italic;font-size:34px;color:var(--forest)">${esc(word)}</p>
+          <p style="margin:8px 0 0;font-family:var(--display);font-style:italic;font-size:32px;color:var(--forest)">${esc(word)}</p>
           <p style="margin:4px 0 0">${esc(meaning)}</p><p class="muted" style="margin:6px 0 0;color:var(--terra2)">“${esc(example)}”</p>
-          <button class="chip" style="margin-top:12px" data-act="toggle" ${B(k, "usedWord")} aria-pressed="${!!D.usedWord}">I used it today</button></section>
+          <button class="chip" style="margin-top:12px" data-act="toggle" ${B(k, "usedWord")} aria-pressed="${!!D.usedWord}">${D.usedWord ? "Learned" : "Got it"}</button></section>
+        <section class="card green"><div class="label">Today's big idea</div><p style="margin:8px 0 0;font-family:var(--display);font-style:italic;font-size:22px">${esc(idea)}</p><p style="margin:6px 0 0;color:#DCE4CF">${esc(ideaText)}</p></section>
       </div>
-      <section class="card sage"><h2 class="h">Learning log</h2><p class="muted" style="margin:6px 0 0">One line about something you learned today. It turns information into knowledge.</p>
-        ${inp(k, "learned", "Today I learned…", "lineinput", "text", "Today I learned")}
-        ${recent.length ? `<div style="margin-top:10px">${recent.map((x) => `<p class="winline"><b>${fmtShort(x.d).toUpperCase()}</b><span>${esc(x.t)}</span></p>`).join("")}</div>` : ""}</section>
-      <section class="card"><h2 class="h">Habits of well-read, successful people</h2><p class="muted" style="margin:6px 0 0">Pick one to build this month. Add it to your habit tracker.</p>
-        <div class="g2" style="margin-top:10px">${G.habits.map(([h, why]) => `<div class="habit"><b>${esc(h)}</b><span>${esc(why)}</span></div>`).join("")}</div></section>
+      ${extras("growExtra", `
+        <p class="prompt">Feeling extra? Two more moves</p>
+        ${picks.slice(1).map(([a, t], j) => `<div class="item ${D.done[j + 1] ? "done" : ""}">${chk(k, "done." + (j + 1), t, true)}<span class="txt"><small class="label" style="display:block;color:var(--sage2)">${a}</small>${esc(t)}</span></div>`).join("")}
+        <p class="prompt">One thing I learned today</p>${inp(k, "learned", "Today I learned…", "lineinput", "text", "Today I learned")}
+        <p class="prompt">Habits worth building, one at a time</p>
+        <div class="g2" style="margin-top:6px">${G.habits.map(([h, why]) => `<div class="habit"><b>${esc(h)}</b><span>${esc(why)}</span></div>`).join("")}</div>`)}
       ${foot("I invest in my mind because it pays the best interest.")}</div>`;
   }
 
   // ================= DAILY RITUAL (habit loop) =================
   function ritualOf(ds) {
-    const day = Store.peek("day:" + ds), g = Store.peek("grat:" + ds), m = Store.peek("mani:" + ds), gr = Store.peek("grow:" + ds);
+    const j = Store.peek("jour:" + ds), g = Store.peek("grat:" + ds), m = Store.peek("mani:" + ds), gr = Store.peek("grow:" + ds);
     return {
-      mood: !!(day && day.mood),
-      said: !!(m && m.dots && m.dots.m0 && m.dots.m1 && m.dots.m2),
+      morning: !!(j && j.feel),
       joy: !!(g && g.items && g.items.length),
-      word: !!(gr && gr.usedWord),
+      said: !!(m && m.dots && m.dots.m0 && m.dots.m1 && m.dots.m2),
       move: !!(gr && gr.done && Object.values(gr.done).some(Boolean)),
     };
   }
@@ -700,47 +680,157 @@
   function level() {
     let pts = 0;
     for (let d = new Date(Math.min(START, today())); d <= today(); d = add(d, 1)) pts += ritualN(ymd(d));
-    const per = 30, lv = Math.min(Math.floor(pts / per), LEVELS.length - 1);
+    const per = 24, lv = Math.min(Math.floor(pts / per), LEVELS.length - 1);
     return { pts, name: LEVELS[lv], next: LEVELS[Math.min(lv + 1, LEVELS.length - 1)], into: pts - lv * per, per, lv };
   }
   function flower(n, label) {
-    const petals = n >= 5 ? "#DE8644" : n >= 3 ? "#F2B888" : null;
+    const petals = n >= 4 ? "#DE8644" : n >= 2 ? "#F2B888" : null;
     let g = `<path d="M4 40h32" stroke="#C7B796" stroke-width="3" stroke-linecap="round"/>`;
-    if (n >= 1) g += `<path d="M20 40V${n >= 3 ? 18 : 28}" stroke="#6F8A62" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="${n >= 3 ? 14 : 15}" cy="${n >= 3 ? 28 : 32}" rx="5" ry="2.6" fill="#9DB08A" transform="rotate(-30 15 31)"/>`;
-    if (n >= 2) g += `<ellipse cx="26" cy="${n >= 3 ? 25 : 30}" rx="5" ry="2.6" fill="#6F8A62" transform="rotate(30 26 28)"/>`;
-    if (petals) { for (let i = 0; i < (n >= 5 ? 6 : 3); i++) { const a = (i * Math.PI * 2) / (n >= 5 ? 6 : 3) - Math.PI / 2; g += `<circle cx="${20 + Math.cos(a) * 6}" cy="${14 + Math.sin(a) * 6}" r="${n >= 5 ? 4.6 : 3.6}" fill="${petals}"/>`; } g += `<circle cx="20" cy="14" r="3.2" fill="#FBF8F1"/>`; }
+    if (n >= 1) g += `<path d="M20 40V${n >= 2 ? 18 : 28}" stroke="#6F8A62" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="15" cy="${n >= 2 ? 28 : 32}" rx="5" ry="2.6" fill="#9DB08A" transform="rotate(-30 15 31)"/><ellipse cx="26" cy="${n >= 2 ? 25 : 30}" rx="5" ry="2.6" fill="#6F8A62" transform="rotate(30 26 28)"/>`;
+    if (petals) { const k = n >= 4 ? 6 : 3; for (let i = 0; i < k; i++) { const a = (i * Math.PI * 2) / k - Math.PI / 2; g += `<circle cx="${20 + Math.cos(a) * 6}" cy="${14 + Math.sin(a) * 6}" r="${n >= 4 ? 4.6 : 3.6}" fill="${petals}"/>`; } g += `<circle cx="20" cy="14" r="3.2" fill="#FBF8F1"/>`; }
     return `<svg width="34" height="40" viewBox="0 0 40 44" role="img" aria-label="${label}">${g}</svg>`;
   }
   function gardenRow(d) {
     const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-    return `<div class="garden">${rows(dim, (_, j) => { const x = new Date(d.getFullYear(), d.getMonth(), j + 1), n = x <= today() ? ritualN(ymd(x)) : 0; return `<span class="${ymd(x) === ymd(today()) ? "today" : ""}">${flower(n, `${fmtShort(x)}: ${n} of 5 rituals`)}<small>${j + 1}</small></span>`; }).join("")}</div>`;
+    return `<div class="garden">${rows(dim, (_, j) => { const x = new Date(d.getFullYear(), d.getMonth(), j + 1), n = x <= today() ? ritualN(ymd(x)) : 0; return `<span class="${ymd(x) === ymd(today()) ? "today" : ""}">${flower(n, `${fmtShort(x)}: ${n} of 4 steps`)}<small>${j + 1}</small></span>`; }).join("")}</div>`;
+  }
+  const FLOW = [
+    ["morning", "Morning check-in", "Tap a feeling and write one line", "#/journal/today"],
+    ["joy", "Gratitude", "Drop one joy in your jar", "#/gratitude/today"],
+    ["said", "Manifest", "Say your affirmation 3 times", "#/manifest/today"],
+    ["move", "Growth", "One small growth move", "#/growth/today"],
+  ];
+  function nextStep(after) {
+    const R = ritualOf(ymd(today()));
+    const i = FLOW.findIndex((f) => f[0] === after);
+    const nx = FLOW.slice(i + 1).find((f) => !R[f[0]]) || FLOW.find((f) => !R[f[0]]);
+    return nx ? `<a class="pill solid nextbtn" href="${nx[3]}">Next: ${nx[1]} →</a>` : `<a class="pill solid nextbtn" href="#/day/today">Morning done! Plan my day →</a>`;
   }
   const QUICKJOYS = ["My family", "My health", "A good meal", "My home", "Sunshine", "A friend", "Learning something new", "Music", "A quiet moment", "My progress"];
-  function ritualCard() {
-    const t = today(), ds = ymd(t), R = ritualOf(ds), n = Object.values(R).filter(Boolean).length;
-    const m = doc("mani:" + ds), day = doc("day:" + ds), gr = doc("grow:" + ds), g = doc("grat:" + ds);
-    const saidN = ["m0", "m1", "m2"].filter((x) => m.dots[x]).length;
-    const G = window.GROWTH, i = dayIdx(t), [word, meaning] = pick(G.words, i);
-    const areas = Object.keys(G.areas), a0 = areas[mod(i * 3, areas.length)], move0 = pick(G.areas[a0], Math.floor((i * 3) / areas.length));
-    const C = 2 * Math.PI * 34, L = level();
-    const step = (done, title, body) => `<div class="step ${done ? "done" : ""}"><span class="tick">${done ? Art.check : ""}</span><div style="min-width:0;flex:1"><b>${title}</b>${body}</div></div>`;
+  const CHEERS = ["Yes! That's one more step.", "Look at you showing up.", "Tiny step, real progress.", "Future you says thank you.", "That's how habits are made.", "One more flower is growing.", "Consistency looks good on you."];
+
+  // ================= SOUND =================
+  let AC = null;
+  function chime(kind) {
+    const s = Store.doc("settings", DEF.settings);
+    if (s.sound === false) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      if (AC.state === "suspended") AC.resume();
+      const t = AC.currentTime;
+      const notes = kind === "big" ? [523.25, 659.25, 783.99, 1046.5] : kind === "done" ? [659.25, 987.77] : [880];
+      notes.forEach((f, i) => {
+        const o = AC.createOscillator(), g = AC.createGain(), st = t + i * 0.1;
+        o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(0.16, st + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, st + 0.7);
+        o.connect(g); g.connect(AC.destination); o.start(st); o.stop(st + 0.75);
+      });
+    } catch (e) {}
+  }
+
+  // ================= FOCUS TIMER =================
+  const FT = () => Store.doc("timer", { running: false, end: 0, left: 1500, len: 25, mode: "focus", task: "" });
+  function fLeft() { const T = FT(); return T.running ? Math.max(0, Math.round((T.end - Date.now()) / 1000)) : T.left; }
+  function fTotal() { const T = FT(); return T.mode === "focus" ? T.len * 60 : 300; }
+  function logFocus(min, task) {
+    if (min < 1) return;
+    const ds = ymd(today()), o = Store.doc("focus:" + ds, { sessions: [] });
+    o.sessions.push({ task: task || "Focus session", min, at: new Date().toTimeString().slice(0, 5) });
+    Store.touch("focus:" + ds);
+  }
+  function focusMin(ds) { const f = Store.peek("focus:" + ds); return f && f.sessions ? f.sessions.reduce((a, s) => a + (+s.min || 0), 0) : 0; }
+  const hm = (m) => (m >= 60 ? Math.floor(m / 60) + "h " + (m % 60 ? (m % 60) + "m" : "") : m + " min").trim();
+  function fTick() {
+    const T = FT(), left = fLeft(), total = fTotal(), C = 2 * Math.PI * 88;
+    const l = document.getElementById("fLabel"), ring = document.getElementById("fRing"), pill = document.getElementById("fPill");
+    if (l) l.textContent = fmtTime(left);
+    if (ring) ring.setAttribute("stroke-dasharray", `${((1 - left / total) * C).toFixed(1)} ${C.toFixed(1)}`);
+    if (pill) { pill.hidden = !T.running || route().name === "focus"; pill.textContent = (T.mode === "focus" ? "Focus " : "Break ") + fmtTime(left); }
+    if (T.running && left <= 0) {
+      T.running = false;
+      if (T.mode === "focus") {
+        logFocus(T.len, T.task); chime("big"); confetti();
+        toast(`${T.len} minutes of focus${T.task ? " on " + T.task : ""}. Saved. Take a 5-minute break.`);
+        T.mode = "break"; T.left = 300;
+      } else { chime("done"); toast("Break's over. Ready for another round?"); T.mode = "focus"; T.left = T.len * 60; }
+      Store.touch("timer"); render();
+    }
+  }
+  setInterval(fTick, 1000);
+
+  function pageFocus() {
+    const T = FT(), ds = ymd(today()), dayDoc = Store.peek("day:" + ds), wk = Store.peek("week:" + ymd(mondayOf(today())));
+    const tasks = [];
+    if (dayDoc) { (dayDoc.top3 || []).forEach((t) => (t.t || "").trim() && !t.d && tasks.push(t.t.trim())); (dayDoc.todos || []).forEach((t) => (t.t || "").trim() && !t.d && tasks.push(t.t.trim())); }
+    if (wk) (wk.big3 || []).forEach((t) => (t.t || "").trim() && !t.d && tasks.push(t.t.trim()));
+    const uniq = [...new Set(tasks)].slice(0, 10);
+    const left = fLeft(), total = fTotal(), C = 2 * Math.PI * 88;
+    const f = Store.peek("focus:" + ds), sessions = f && f.sessions ? f.sessions : [];
+    const todayM = focusMin(ds);
+    let weekM = 0; for (let x = mondayOf(today()); x <= today(); x = add(x, 1)) weekM += focusMin(ymd(x));
+    let monthM = 0; for (let x = new Date(today().getFullYear(), today().getMonth(), 1); x <= today(); x = add(x, 1)) monthM += focusMin(ymd(x));
+    return `<div class="stack">
+      ${head("Focus timer · " + fmtLong(today()), "One task. Full focus.", "Pick what you're working on, press start, and let everything else wait.", Art.scene("wave", seasonOf(today()), "Calm waves"))}
+      <section class="card focuscard">
+        <div class="label">What are you focusing on?</div>
+        ${uniq.length ? `<div class="row" style="gap:6px;margin-top:10px">${uniq.map((t) => `<button class="chip" data-act="fTask" data-v="${esc(t)}" aria-pressed="${T.task === t}">${esc(t)}</button>`).join("")}</div>` : `<p class="muted" style="margin:8px 0 0">Tip: tasks from today's plan show up here.</p>`}
+        <div class="addrow"><input id="fTaskIn" class="boxinput" placeholder="Or type a task…" value="${esc(uniq.includes(T.task) ? "" : T.task)}" aria-label="Task to focus on" data-enter="fTaskSet"><button id="fTaskSet" class="btn dark" data-act="fTaskIn">Set</button></div>
+        <div class="timerwrap">
+          <div class="ringwrap" style="width:210px;height:210px"><svg width="210" height="210" viewBox="0 0 210 210" style="transform:rotate(-90deg)"><circle cx="105" cy="105" r="88" fill="none" stroke="#EADFC9" stroke-width="14"/><circle id="fRing" cx="105" cy="105" r="88" fill="none" stroke="${T.mode === "focus" ? "#DE8644" : "#6F8A62"}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${((1 - left / total) * C).toFixed(1)} ${C.toFixed(1)}"/></svg>
+            <div class="mid" role="timer"><b id="fLabel" style="font-size:44px">${fmtTime(left)}</b><span class="label" style="color:${T.mode === "focus" ? "var(--terra)" : "var(--sage2)"}">${T.mode === "focus" ? "Focus" : "Break"}</span></div></div>
+          <div style="min-width:0;flex:1">
+            <p class="affbig" style="margin-top:0">${T.task ? esc(T.task) : "Choose a task above, or just start."}</p>
+            <div class="row" style="gap:6px">${[15, 25, 45, 60].map((m) => `<button class="chip" data-act="fLen" data-v="${m}" aria-pressed="${T.len === m && T.mode === "focus"}">${m} min</button>`).join("")}<button class="chip" data-act="fBreak" aria-pressed="${T.mode === "break"}">Break 5</button></div>
+            <div class="row" style="margin-top:14px"><button class="btn ${T.running ? "dark" : ""}" style="min-width:120px" data-act="fGo">${T.running ? "Pause" : left < total ? "Resume" : "Start"}</button>
+              ${T.mode === "focus" && left < total ? `<button class="btn ghost" data-act="fFinish">Finish early & save</button>` : ""}<button class="chip" data-act="fReset">Reset</button></div>
+          </div>
+        </div></section>
+      <div class="g3">${stat(hm(todayM), "", "focused today", "peach")}${stat(hm(weekM), "", "focused this week", "sage")}${stat(hm(monthM), "", "focused in " + monthName(today()), "sand")}</div>
+      <section class="card"><h2 class="h">Today's focus sessions</h2>
+        ${sessions.length ? sessions.slice().reverse().map((s) => `<div class="item"><span class="t" style="width:56px;font-size:13px;color:var(--muted);font-weight:700">${esc(s.at)}</span><span class="txt">${esc(s.task)}</span><b style="color:var(--terra);padding-right:8px">${s.min} min</b></div>`).join("") : `<p class="muted" style="margin:8px 0 0">Finished sessions are saved here and counted in your weekly and monthly reviews.</p>`}</section>
+      ${foot("Focus is a superpower. One session at a time.")}</div>`;
+  }
+
+  // ================= SIMPLE HOME =================
+  function flowCard() {
+    const ds = ymd(today()), R = ritualOf(ds), n = Object.values(R).filter(Boolean).length;
+    const upNext = FLOW.find((f) => !R[f[0]]);
+    const C = 2 * Math.PI * 34;
     return `<section class="card ritual">
-      <div class="between" style="align-items:center"><div><div class="label">Today's 5-minute ritual</div><h2 class="h" style="font-size:24px;font-style:italic;font-weight:400;margin-top:4px">${n === 5 ? "You glowed today." : n ? "Keep going, you're glowing" : "Tiny steps, big glow"}</h2>
-          <p class="muted" style="margin:4px 0 0">No long writing. Just five small taps for future you.</p></div>
-        <div class="glow" aria-label="${n} of 5 done"><svg width="84" height="84" viewBox="0 0 84 84" style="transform:rotate(-90deg)"><circle cx="42" cy="42" r="34" fill="none" stroke="#EADFC9" stroke-width="9"/><circle cx="42" cy="42" r="34" fill="none" stroke="${n === 5 ? "#DE8644" : "#6F8A62"}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${((n / 5) * C).toFixed(1)} ${C.toFixed(1)}"/></svg><b>${n}/5</b></div></div>
-      <div class="steps">
-        ${step(R.mood, "How do I feel?", `<div class="row" style="gap:2px;margin-top:4px">${["great", "happy", "okay", "sad", "tired"].map((k2) => `<button class="mood mini" data-act="set" ${B("day:" + ds, "mood")} data-val='"${k2}"' data-same="null" aria-pressed="${day.mood === k2}" aria-label="${MOODN[k2]}"><span class="ring">${Art.face(k2, MOODC[k2]).replace('width="46" height="46"', 'width="34" height="34"')}</span></button>`).join("")}</div>`)}
-        ${step(R.said, "Say it out loud, 3 times", `<p class="affline">“${esc(affOf(t))}”</p><div class="row" style="gap:8px"><button class="btn ${R.said ? "dark" : ""}" data-act="sayAff">${R.said ? "Said 3 times" : "I said it · " + saidN + "/3"}</button></div>`)}
-        ${step(R.joy, "Drop one joy in your jar", `<div class="row" style="gap:6px;margin-top:6px">${QUICKJOYS.map((q) => `<button class="chip" data-act="quickJoy" data-v="${q}">${q}</button>`).join("")}<a class="chip" style="display:inline-flex;align-items:center;text-decoration:none" href="#/gratitude/today">Write my own →</a></div>${g.items.length ? `<p class="muted" style="margin:6px 0 0">In the jar today: ${g.items.map((x) => esc(x.t)).join(", ")}</p>` : ""}`)}
-        ${step(R.word, "Learn today's word", R.word ? `<p style="margin:4px 0 0"><span class="wordbig">${esc(word)}</span> · ${esc(meaning)}</p>` : `<div style="margin-top:6px"><button class="btn ghost" data-act="toggle" ${B("grow:" + ds, "usedWord")}>Reveal & learn it</button></div>`)}
-        ${step(R.move, "One growth move", `<p style="margin:4px 0 6px"><small class="label" style="color:var(--sage2)">${a0}</small><br>${esc(move0)}</p><button class="btn ${R.move ? "dark" : "ghost"}" data-act="toggle" ${B("grow:" + ds, "done.0")}>${R.move ? "Done!" : "I did it"}</button> <a href="#/growth/today" class="muted" style="margin-left:8px">more ideas</a>`)}
-      </div>
-      <div class="between" style="margin-top:16px"><div class="label">My ${monthName(t)} garden</div><span class="muted">a flower grows for every day you show up</span></div>
-      ${gardenRow(t)}
-      <div class="levelbar"><div class="between"><b>Level ${L.lv + 1} · ${L.name}</b><span class="muted">${L.lv < LEVELS.length - 1 ? `${L.per - L.into} taps to ${L.next}` : "Highest level. Legend."}</span></div><div class="bar orange"><i style="width:${(L.into / L.per) * 100}%"></i></div></div>
+      <div class="between" style="align-items:center"><div><div class="label">Your morning flow</div>
+          <h2 class="h" style="font-size:26px;font-style:italic;font-weight:400;margin-top:4px">${n === 4 ? "Morning complete. You glowed today." : n ? "Keep going, you're glowing" : "Four tiny steps. About five minutes."}</h2></div>
+        <div class="glow" aria-label="${n} of 4 done"><svg width="84" height="84" viewBox="0 0 84 84" style="transform:rotate(-90deg)"><circle cx="42" cy="42" r="34" fill="none" stroke="#EADFC9" stroke-width="9"/><circle cx="42" cy="42" r="34" fill="none" stroke="${n === 4 ? "#DE8644" : "#6F8A62"}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${((n / 4) * C).toFixed(1)} ${C.toFixed(1)}"/></svg><b>${n}/4</b></div></div>
+      <div class="flow">${FLOW.map(([key, title, hint, href], j) => { const done = R[key], nx = upNext && upNext[0] === key; return `<a class="flowstep ${done ? "done" : ""} ${nx ? "next" : ""}" href="${href}">
+          <span class="num">${done ? Art.check.replace('width="13" height="13"', 'width="18" height="18"') : j + 1}</span>
+          <span style="min-width:0;flex:1"><b>${title}</b><small>${done ? "Done for today" : hint}</small></span>
+          <span class="go">${done ? "" : nx ? "Start →" : "→"}</span></a>`; }).join("")}</div>
+      <div class="between" style="margin-top:14px"><div class="label">My ${monthName(today())} garden</div><span class="muted">a flower for every morning you show up</span></div>
+      ${gardenRow(today())}
     </section>`;
   }
-  const CHEERS = ["Yes! That's one more step.", "Look at you showing up.", "Tiny step, real progress.", "Future you says thank you.", "That's how habits are made.", "One more flower is growing.", "Consistency looks good on you."];
+
+  function pageHome() {
+    const t = today(), s = Store.doc("settings", DEF.settings), th = themeOf(t), L = level();
+    const h = new Date().getHours(), greet = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    const fm = focusMin(ymd(t));
+    return `<div class="stack">
+      <div class="hero small">
+        <div class="arch-wrap"><div class="arch-line"></div><div class="arch">${Art.scene("sunrise", seasonOf(t), "Sunrise over green hills")}</div>
+          <svg class="stamp" viewBox="0 0 150 150" aria-hidden="true"><defs><path id="ringPath" d="M75,75 m-52,0 a52,52 0 1,1 104,0 a52,52 0 1,1 -104,0"/></defs><circle cx="75" cy="75" r="72" fill="#3F5B3A"/><circle cx="75" cy="75" r="66" fill="none" stroke="#F6DCC4" stroke-width="1" stroke-dasharray="2 4"/><text font-size="12.5" font-weight="700" letter-spacing="3" fill="#FBF3E6" font-family="DM Sans, sans-serif"><textPath href="#ringPath">PLAN · DREAM · READ · BLOOM · GROW · </textPath></text><circle cx="75" cy="75" r="14" fill="#DE8644"/></svg></div>
+        <div class="hero-text"><p class="eyebrow">${fmtLong(t)} · ${th.theme}</p>
+          <h1 class="becoming" style="font-size:clamp(48px,7vw,76px)">${greet},</h1><p class="hand" style="font-size:40px;margin:0">${esc(s.name || "friend")}</p>
+          <p class="affline" style="font-size:20px;margin-top:12px">“${esc(affOf(t))}”</p>
+          <p class="muted" style="margin:6px 0 0">Level ${L.lv + 1} · ${L.name}</p></div>
+      </div>
+      ${flowCard()}
+      <div class="g2">
+        <a class="tile-link big" href="#/day/today" style="background:var(--peach);border-color:var(--peach)"><b>Plan my day</b><span>Top 3, to-dos, schedule, water and mood</span></a>
+        <a class="tile-link big" href="#/focus" style="background:var(--sagel);border-color:var(--sagel)"><b>Focus timer</b><span>${fm ? hm(fm) + " focused today" : "Pick a task and start a session"}</span></a>
+      </div>
+      <p class="muted" style="text-align:center;font-size:12px;margin:0">version ${VERSION}</p>
+    </div>`;
+  }
+
   function confetti() {
     if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const c = document.createElement("canvas"); c.className = "confetti"; document.body.appendChild(c);
@@ -773,6 +863,7 @@
         case "past": html = pagePast(); break;
         case "more": html = pageMore(); break;
         case "reset": html = pageReset(); break;
+        case "focus": html = pageFocus(); break;
         case "gratitude": html = pageGratitude(r.d); break;
         case "manifest": html = pageManifest(r.d); break;
         case "growth": html = pageGrowth(r.d); break;
@@ -783,6 +874,8 @@
     $app.innerHTML = html;
     $rail.innerHTML = TABS.map(([id, l, h]) => `<a href="${h}" class="${r.tab === id ? "on" : ""}" ${r.tab === id ? 'aria-current="page"' : ""}>${l}</a>`).join("");
     Pad.mountAll($app);
+    fTick();
+    $app.querySelectorAll("details[data-ui-open]").forEach((dt) => dt.addEventListener("toggle", () => { UI[dt.dataset.uiOpen] = dt.open; window.dispatchEvent(new Event("resize")); }));
     if (active) { const el = document.getElementById(active); if (el && el.tagName === "INPUT" && el.dataset.ui) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
     if (location.hash !== lastHash) { window.scrollTo(0, 0); lastHash = location.hash; }
     if (r.name === "more") storageLine();
@@ -832,6 +925,14 @@
       UI.armed = null; await Store.wipe(); toast("All clear. A fresh start begins now.");
       setTimeout(() => { location.hash = "#/"; location.reload(); }, 900); return false;
     },
+    fTask(el) { const T = FT(); T.task = T.task === el.dataset.v ? "" : el.dataset.v; Store.touch("timer"); return "ui"; },
+    fTaskIn() { const v = (document.getElementById("fTaskIn").value || "").trim(); const T = FT(); T.task = v; Store.touch("timer"); return "ui"; },
+    fLen(el) { const T = FT(); T.len = +el.dataset.v; T.mode = "focus"; T.running = false; T.left = T.len * 60; Store.touch("timer"); return "ui"; },
+    fBreak() { const T = FT(); T.mode = "break"; T.running = false; T.left = 300; Store.touch("timer"); return "ui"; },
+    fGo() { const T = FT(); if (T.running) { T.left = fLeft(); T.running = false; } else { T.end = Date.now() + fLeft() * 1000; T.running = true; chime("tick"); } Store.touch("timer"); return "ui"; },
+    fFinish() { const T = FT(); const mins = Math.round((T.len * 60 - fLeft()) / 60); if (mins >= 1) { logFocus(mins, T.task); chime("done"); toast(mins + " minutes saved. Nice focus."); } else toast("Less than a minute, so nothing was saved."); T.running = false; T.left = T.len * 60; Store.touch("timer"); return "ui"; },
+    fReset() { const T = FT(); T.running = false; T.left = fTotal(); Store.touch("timer"); return "ui"; },
+    soundToggle() { const s = Store.doc("settings", DEF.settings); s.sound = s.sound === false; Store.touch("settings"); if (s.sound) chime("done"); return "ui"; },
     sayAff() {
       const ds = ymd(today()), o = doc("mani:" + ds);
       const nx = ["m0", "m1", "m2"].find((x) => !o.dots[x]);
@@ -839,6 +940,7 @@
       o.dots[nx] = true; if (!o.aff) o.aff = affOf(today()); Store.touch("mani:" + ds);
       return "ui";
     },
+    quickJoyOn(el) { const ds = el.dataset.ds, o = doc("grat:" + ds); o.items.push({ t: el.dataset.v, d: false }); Store.touch("grat:" + ds); UI.drop = true; return "ui"; },
     quickJoy(el) { const ds = ymd(today()), o = doc("grat:" + ds); o.items.push({ t: el.dataset.v, d: false }); Store.touch("grat:" + ds); UI.drop = true; return "ui"; },
     fill(el) { const t = document.getElementById(el.dataset.target); if (t) { t.value = el.dataset.v; t.focus(); t.setSelectionRange(t.value.length, t.value.length); } return false; },
     setText(el) { const o = doc(el.dataset.doc); setP(o, el.dataset.path, el.dataset.v); },
@@ -894,15 +996,16 @@
     const el = e.target.closest("[data-act]"); if (!el || !ACT[el.dataset.act]) return;
     e.preventDefault();
     const tds = ymd(today()), before = ritualN(tds);
+    const turningOn = el.getAttribute("aria-pressed") === "false" || ["push", "quickJoy", "quickJoyOn", "sayAff", "addBook", "pushStr", "addStr"].includes(el.dataset.act);
     Promise.resolve(ACT[el.dataset.act](el)).then((res) => {
       if (res === false) return;
       if (res !== "ui" && el.dataset.doc) Store.touch(el.dataset.doc);
       render();
       const after = ritualN(tds);
       if (after > before) {
-        if (after === 5) { confetti(); toast("Ritual complete! A new flower bloomed in your garden."); }
-        else toast(pick(CHEERS, Date.now() % 997) + " " + after + " of 5 today.");
-      }
+        if (after === 4) { chime("big"); confetti(); toast("Morning flow complete! A new flower bloomed in your garden."); }
+        else { chime("done"); toast(pick(CHEERS, Date.now() % 997) + " " + after + " of 4 this morning."); }
+      } else if (turningOn && !el.dataset.act.startsWith("f")) chime("tick");
     });
   });
   document.addEventListener("input", (e) => {

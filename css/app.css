@@ -329,3 +329,44 @@ textarea.lined:focus{outline:none}
 .habit span{font-size:13.5px;color:var(--muted)}
 @media (max-width:760px){.weekstrip{grid-template-columns:repeat(4,minmax(0,1fr))}.badges{grid-template-columns:repeat(2,minmax(0,1fr))}.row369 .l{width:100%}}
 @media (prefers-reduced-motion:reduce){.stamp,.sunspin g,.arch svg circle,.arch svg path,.jar i.drop{animation:none!important}}
+
+/* v4: roomy tabs that never overlap; light morning check-in */
+#rail{overflow-y:auto;scrollbar-width:none;padding-bottom:12px}
+#rail::-webkit-scrollbar{display:none}
+#rail a{flex:none!important;min-height:0!important;max-height:none!important;padding:16px 0;font-size:10px;letter-spacing:.1em;line-height:1}
+@media (max-width:760px){#rail{overflow-x:auto;overflow-y:hidden}#rail a{padding:0 14px;min-height:44px!important}}
+.chip.feel[aria-pressed=true]{background:var(--orange);border-color:var(--orange);color:#2E1A0A;font-weight:700}
+.more-write summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer}
+.more-write summary::-webkit-details-marker{display:none}
+.more-write[open] summary .pill{background:var(--forest);color:var(--paper);border-color:var(--forest)}
+
+/* v5: one thing a day */
+.onething{border:1.5px solid var(--apricot)}
+.onething.done{border-color:var(--sage2);background:#F4F7EE}
+.bigtick{width:52px;height:52px;border-radius:50%;border:2.5px dashed var(--line2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.onething.done .bigtick{border:none;background:var(--sage2);animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.4)}to{transform:none}}
+.affbig{font-family:var(--display);font-style:italic;font-size:22px;line-height:1.35;color:var(--forest);margin:12px 0 8px}
+.dot369.big{width:60px;height:60px}.dot369.big span{width:46px;height:46px;border-width:2.5px}
+@media (prefers-reduced-motion:reduce){.onething.done .bigtick{animation:none}}
+
+/* v6: morning flow, focus timer, simple home */
+.hero.small{grid-template-columns:minmax(0,200px) minmax(0,1fr);padding:28px 26px;gap:56px}
+.hero.small .arch-wrap{max-width:200px}.hero.small .stamp{width:86px;height:86px;right:-30px;top:16px}
+.hero.small .hero-text{text-align:left}
+@media (max-width:700px){.hero.small{grid-template-columns:minmax(0,1fr)}.hero.small .arch-wrap{max-width:150px}.hero.small .hero-text{text-align:center}}
+.flow{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.flowstep{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:var(--paper);text-decoration:none;color:var(--ink);min-height:64px;transition:transform .15s}
+.flowstep:active{transform:scale(.98)}
+.flowstep .num{width:36px;height:36px;border-radius:50%;border:2px solid var(--line2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--muted);flex-shrink:0}
+.flowstep b{display:block;font-family:var(--display);font-style:italic;font-weight:400;font-size:21px;color:var(--forest)}
+.flowstep small{display:block;color:var(--muted);font-size:13.5px;margin-top:2px}
+.flowstep .go{font-weight:700;color:var(--terra);white-space:nowrap}
+.flowstep.next{border:1.5px solid var(--orange);background:#FDF0E3}
+.flowstep.done{background:#F4F7EE;border-color:#DCE4CF}
+.flowstep.done .num{background:var(--sage2);border-color:var(--sage2)}
+.flowstep.done b{color:var(--sage2)}
+.tile-link.big{min-height:130px;justify-content:center}.tile-link.big b{font-size:26px}
+.nextbtn{min-height:48px;font-size:15px;text-decoration:none}
+.timerwrap{display:flex;gap:28px;align-items:center;margin-top:18px;flex-wrap:wrap}
+.fpill{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0));z-index:40;background:var(--orange);color:#2E1A0A;font-weight:700;padding:10px 18px;border-radius:999px;text-decoration:none;box-shadow:0 4px 14px rgba(63,91,58,.18);font-variant-numeric:tabular-nums}

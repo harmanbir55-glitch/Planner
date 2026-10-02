@@ -32,7 +32,7 @@ It now opens full screen like a normal app and works offline.
 2. In your GitHub repository, tap **Add file → Upload files** and drag in the *contents* of the folder (`index.html`, `sw.js`, `manifest.webmanifest`, `README.md` and the `css`, `js`, `fonts`, `icons` folders). Let them replace the old files, then **Commit changes**.
 3. Check the `js` folder on GitHub: it must contain `growth.js`.
 4. Wait 2–3 minutes for GitHub Pages to update.
-5. On the iPad, close the app completely (swipe it away), then open it again. The bottom of the home page should say **version 3**.
+5. On the iPad, close the app completely (swipe it away), then open it again. The bottom of the home page should say **version 6**.
 
 ## Starting fresh
 Go to **More → Start fresh** (or add `#/reset` to the end of your link) and tap the button twice. This erases every saved page on that device.
