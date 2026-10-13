@@ -291,6 +291,46 @@ details ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;
 .backup .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);z-index:60;background:var(--deep);color:#FBF8F1;border-radius:999px;padding:12px 20px;font-weight:600;font-size:.9rem;max-width:90vw;text-align:center;box-shadow:0 10px 30px -12px rgba(0,0,0,.4);transition:opacity .4s}
 #toast.out{opacity:0}
+
+/* ---- vision board maker ---- */
+.vbhead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.vbtools{display:flex;flex-direction:column;gap:10px;background:var(--card);border:1px solid var(--edge);border-radius:20px;padding:14px}
+.vbstk{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}
+.vbstk button{aspect-ratio:1;border:0;border-radius:14px;background:var(--paper);padding:7px;transition:transform .15s}
+.vbstk button:hover{transform:scale(1.08) rotate(-4deg)}
+.vbstk svg{width:100%;height:100%}
+.vbfrom{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.vbctx{display:flex;flex-direction:column;gap:10px;background:var(--tintB);border-radius:20px;padding:12px 14px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 6px);z-index:6}
+.vbsw{width:30px;height:30px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 0 1.5px var(--edge);padding:0}
+.vbsw.on{box-shadow:0 0 0 2.5px var(--deep)}
+.vboard{position:relative;width:100%;aspect-ratio:4/5;max-width:100%;container-type:inline-size;border-radius:20px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06),0 14px 30px -22px rgba(40,30,50,.5)}
+.bg-cream{background:radial-gradient(color-mix(in srgb,#C9B99A 45%,transparent) 1px,transparent 1.4px) 0 0/22px 22px,#FBF6EC}
+.bg-cork{background:radial-gradient(#A97E4D 1px,transparent 1.6px) 0 0/9px 9px,radial-gradient(#E0C397 1px,transparent 1.6px) 4px 5px/13px 13px,#C99D69}
+.bg-lavender{background:linear-gradient(160deg,#E6D4F7,#FCE4EF 60%,#FFF1C9)}
+.bg-sunset{background:linear-gradient(180deg,#FFD3B0,#F9CFE0 55%,#D9CCF5)}
+.bg-night{background:radial-gradient(#fff 1px,transparent 1.6px) 0 0/37px 37px,radial-gradient(#FFE9A8 1.2px,transparent 1.8px) 15px 20px/53px 53px,linear-gradient(#2B2848,#55467A)}
+.bg-grid{background:linear-gradient(#E6DCC8 1px,transparent 1px) 0 0/100% 24px,linear-gradient(90deg,#E6DCC8 1px,transparent 1px) 0 0/24px 100%,#FFFDF8}
+.vbempty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:var(--muted);padding:20px;pointer-events:none}
+.bg-night .vbempty{color:#E6E0F5}
+.vbi{position:absolute;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab;transform-origin:50% 50%}
+.vbi.sel{outline:2px dashed var(--deep);outline-offset:4px;border-radius:6px}
+.vbi img{-webkit-user-drag:none;pointer-events:none}
+.vbh{position:absolute;right:-17px;bottom:-17px;width:30px;height:30px;border-radius:50%;background:var(--deep);border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:nwse-resize;touch-action:none}
+.vbh::after{content:"↻";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:15px;font-weight:700}
+.f-hand{font-family:var(--hand)}
+.f-serif{font-family:var(--serif);font-style:italic}
+.f-sans{font-family:var(--sans);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.vbt{text-align:center;line-height:1.02;text-shadow:0 1px 0 rgba(255,255,255,.55);overflow-wrap:anywhere}
+.vbn{aspect-ratio:1;display:grid;place-items:center;padding:10%;text-align:center;color:#2E2A33;box-shadow:0 8px 14px -10px rgba(0,0,0,.45);border-radius:2px;line-height:1.05;overflow:hidden;overflow-wrap:anywhere}
+.vbp{position:relative}
+.vbp img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.vbp.polaroid{background:#fff;padding:6% 6% 22%;box-shadow:0 10px 18px -12px rgba(0,0,0,.5)}
+.vbp.polaroid span{position:absolute;left:0;right:0;bottom:3%;text-align:center;font-family:var(--hand);color:#2E2A33}
+.vbp.round img{border-radius:50%;box-shadow:0 0 0 5px #fff,0 10px 18px -12px rgba(0,0,0,.5)}
+.vbp.plain img{border-radius:6px}
+.vbp.heart img{-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 92S6 64 6 34C6 18 18 8 31 8c9 0 15 5 19 12 4-7 10-12 19-12 13 0 25 10 25 26 0 30-44 58-44 58z'/%3E%3C/svg%3E") center/100% 100% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 92S6 64 6 34C6 18 18 8 31 8c9 0 15 5 19 12 4-7 10-12 19-12 13 0 25 10 25 26 0 30-44 58-44 58z'/%3E%3C/svg%3E") center/100% 100% no-repeat}
+.vbs svg{display:block;width:100%;height:auto;filter:drop-shadow(0 4px 4px rgba(0,0,0,.12))}
+.vbtape{width:100%;aspect-ratio:3.6/1;opacity:.88;background:repeating-linear-gradient(45deg,var(--tc) 0 8px,color-mix(in srgb,var(--tc) 65%,#fff) 8px 16px);clip-path:polygon(0 0,100% 0,97% 20%,100% 40%,97% 60%,100% 80%,97% 100%,0 100%,3% 80%,0 60%,3% 40%,0 20%)}
 .sync{margin-top:6px;text-align:center;font-size:.78rem;color:var(--muted)}
 .sync i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B9B2A4;margin-right:6px;vertical-align:middle}
 .sync.cloud i{background:#6F9A6A}
@@ -832,7 +872,8 @@ function sunrise(p){
 }
 function vVision(){
   const v=doc("vision");
-  const sub=`<nav class="subnav" aria-label="Vision board pages"><button class="${S.vtab==="figure"?"on":""}" data-act="vtab" data-v="figure">I · Dream it</button><button class="${S.vtab==="journal"?"on":""}" data-act="vtab" data-v="journal">II · Watch the sun rise</button></nav>`;
+  const sub=`<nav class="subnav" aria-label="Vision board pages"><button class="${S.vtab==="figure"?"on":""}" data-act="vtab" data-v="figure">I · Dream it</button><button class="${S.vtab==="journal"?"on":""}" data-act="vtab" data-v="journal">II · Watch the sun rise</button><button class="${S.vtab==="board"?"on":""}" data-act="vtab" data-v="board">III · Make my board</button></nav>`;
+  if(S.vtab==="board")return sub+vBoardMaker();
   if(S.vtab==="figure"){
     return `${sub}
     <div class="head fade">${archScene("mtn")}<div><div class="eyebrow">Vision board · part one</div><h1>Dream without<br>limits</h1><p class="lede">Before you choose a single picture, get clear on what you truly want. Write how you want to feel first, then what you want.</p></div></div>
@@ -842,7 +883,7 @@ function vVision(){
     <button class="btn" data-act="vtab" data-v="journal" style="align-self:center">Next: watch the sun rise</button>
     <p class="footline">I am allowed to want big, beautiful things.</p>`;
   }
-  const done=[v.top.some(x=>x&&x.trim()),v.tiles.length>0,((v.feel||"").trim().length>30||hasInk(inkKey("vision","feel"))),v.believe.some(x=>x&&x.trim()),v.steps.some(s=>s.done)];
+  const done=[v.top.some(x=>x&&x.trim()),v.tiles.length>0||!!(v.board&&v.board.items&&v.board.items.length),((v.feel||"").trim().length>30||hasInk(inkKey("vision","feel"))),v.believe.some(x=>x&&x.trim()),v.steps.some(s=>s.done)];
   const p=done.filter(Boolean).length,n=i=>`<div class="n ${done[i]?"ok":""}">${done[i]?"✓":["I","II","III","IV","V"][i]}</div>`;
   const label=i=>(v.top[i]||"").trim()||"Dream "+(i+1);
   return `${sub}
@@ -851,7 +892,7 @@ function vVision(){
   <section class="box a step">${n(1)}<div class="body"><h2>See it</h2><span class="small muted">Build your board with words and photos that look and feel like your dreams.</span>
     <div class="board">${v.tiles.map((t,i)=>{const p2=PALETTES[(i*3)%14];return `<div class="tile" style="background:${i%2?p2.a:p2.b}">${t.img?`<img src="${esc(t.img)}" alt="">`:esc(t.text)}<button class="x" data-act="tileDel" data-v="${i}" aria-label="Remove">${S.confirm==="tile"+i?"Remove?":"✕"}</button></div>`}).join("")}</div>
     <div class="addrow"><input class="pill" type="text" id="tile-word" placeholder="A word or quote" data-enter="tileWord"><button class="btn" data-act="tileWord">Add</button></div>
-    <label class="btn sm soft" style="align-self:flex-start;display:inline-flex;align-items:center;cursor:pointer">Add a photo<input type="file" accept="image/*" id="tile-photo" hidden></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sm soft" style="display:inline-flex;align-items:center;cursor:pointer">Add a photo<input type="file" accept="image/*" id="tile-photo" hidden></label><button class="btn sm" data-act="vtab" data-v="board">Open the board maker</button></div>
   </div></section>
   <section class="box step">${n(2)}<div class="body"><h2>Feel it</h2><span class="small muted">Describe one day when all three dreams are real. Present tense, lots of detail.</span>${writeArea("vision","feel","I wake up and…",280)}</div></section>
   <section class="box b step">${n(3)}<div class="body"><h2>Believe it</h2><span class="small muted">Turn each dream into an "I am" or "I have" sentence. Read them every morning.</span>${[0,1,2].map(i=>`<label style="display:flex;flex-direction:column"><span class="small muted">${esc(label(i))}</span>${line("vision","believe."+i,"I am… / I have…")}</label>`).join("")}</div></section>
@@ -979,7 +1020,7 @@ const A={
 };
 document.addEventListener("click",e=>{
   const el=e.target.closest("[data-act]");if(!el)return;
-  const a=el.dataset.act;if(S.confirm&&!["tileDel","vidDel","appDel"].includes(a))S.confirm=null;
+  const a=el.dataset.act;if(S.confirm&&!["tileDel","vidDel","appDel","inkClear","vbClear"].includes(a))S.confirm=null;
   A[a]&&A[a](el.dataset.v,el);
 });
 document.addEventListener("keydown",e=>{
@@ -1251,6 +1292,159 @@ function restoreBackup(file){
 }
 document.addEventListener("change",e=>{if(e.target.id==="restore-file"&&e.target.files&&e.target.files[0]){restoreBackup(e.target.files[0]);e.target.value=""}});
 A.backup=()=>exportBackup();
+
+/* ---------- vision board maker ---------- */
+/* fixed pastel colours, so the board looks the same every day */
+const VB_COLS=["#2E2A33","#6B55A8","#B5566E","#3F8466","#C27A2C","#3F6E9A","#FFFFFF"];
+const VB_PAPER=["#FFF1A8","#FFD3B0","#F9CFE0","#D9CCF5","#C7F0DB","#CFE6FA","#FFFDF8"];
+const VB_TAPE=["#F9CFE0","#D9CCF5","#C7F0DB","#FFE38A","#CFE6FA","#FFD3B0"];
+const VB_FONTS=[["hand","Handwritten"],["serif","Elegant"],["sans","Bold"]];
+const VB_BG=[["cream","Cream paper"],["cork","Cork board"],["lavender","Lavender dream"],["sunset","Peach sunset"],["night","Night sky"],["grid","Grid paper"]];
+const STK={
+ sun:`<circle cx="50" cy="50" r="22" fill="#FFD25E"/><g stroke="#F2A65A" stroke-width="6" stroke-linecap="round"><path d="M50 8v12M50 80v12M8 50h12M80 50h12M20 20l9 9M71 71l9 9M80 20l-9 9M29 71l-9 9"/></g><path d="M41 54q9 8 18 0" stroke="#C27A2C" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="43" cy="45" r="2.5" fill="#C27A2C"/><circle cx="57" cy="45" r="2.5" fill="#C27A2C"/>`,
+ moon:`<path d="M62 12a38 38 0 1 0 26 52A30 30 0 0 1 62 12z" fill="#FFE9A8" stroke="#E8C66A" stroke-width="3"/><circle cx="40" cy="45" r="4" fill="#F2D27A"/><circle cx="52" cy="68" r="6" fill="#F2D27A"/>`,
+ star:`<path d="M50 8l11 25 27 3-20 18 6 27-24-14-24 14 6-27-20-18 27-3z" fill="#FFE38A" stroke="#F2B84B" stroke-width="3" stroke-linejoin="round"/>`,
+ heart:`<path d="M50 86S12 62 12 36c0-13 10-22 21-22 8 0 14 4 17 11 3-7 9-11 17-11 11 0 21 9 21 22 0 26-38 50-38 50z" fill="#F7A8C4" stroke="#E07BA0" stroke-width="3"/><path d="M28 32q4-8 12-8" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+ flower:`${[0,72,144,216,288].map(r=>`<ellipse cx="50" cy="26" rx="14" ry="22" fill="#F9CFE0" stroke="#E7A3BE" stroke-width="2" transform="rotate(${r} 50 50)"/>`).join("")}<circle cx="50" cy="50" r="12" fill="#FFD25E"/>`,
+ butterfly:`<ellipse cx="32" cy="36" rx="20" ry="16" fill="#D9CCF5" stroke="#9C86D6" stroke-width="2.5" transform="rotate(-25 32 36)"/><ellipse cx="68" cy="36" rx="20" ry="16" fill="#D9CCF5" stroke="#9C86D6" stroke-width="2.5" transform="rotate(25 68 36)"/><ellipse cx="36" cy="64" rx="13" ry="11" fill="#F9CFE0" stroke="#E7A3BE" stroke-width="2.5"/><ellipse cx="64" cy="64" rx="13" ry="11" fill="#F9CFE0" stroke="#E7A3BE" stroke-width="2.5"/><rect x="47" y="28" width="6" height="46" rx="3" fill="#6B55A8"/><path d="M48 28q-6-12-12-14M52 28q6-12 12-14" stroke="#6B55A8" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+ rainbow:`<g fill="none" stroke-linecap="round" stroke-width="9"><path d="M14 74a36 36 0 0 1 72 0" stroke="#F7A8C4"/><path d="M24 74a26 26 0 0 1 52 0" stroke="#FFE38A"/><path d="M34 74a16 16 0 0 1 32 0" stroke="#A9DCC3"/></g><circle cx="14" cy="78" r="9" fill="#fff" stroke="#ddd"/><circle cx="86" cy="78" r="9" fill="#fff" stroke="#ddd"/>`,
+ sparkle:`<path d="M50 6c4 24 20 40 44 44-24 4-40 20-44 44-4-24-20-40-44-44 24-4 40-20 44-44z" fill="#FFF3B8" stroke="#F2C94C" stroke-width="3" stroke-linejoin="round"/>`,
+ cloud:`<g fill="#fff" stroke="#BFD7EE" stroke-width="3"><circle cx="34" cy="58" r="18"/><circle cx="56" cy="46" r="22"/><circle cx="74" cy="60" r="15"/><rect x="30" y="58" width="48" height="18" rx="9" stroke="none"/></g>`,
+ plane:`<path d="M8 50l84-34-24 70-16-24-20 14 4-24z" fill="#CFE6FA" stroke="#5B8DBF" stroke-width="3" stroke-linejoin="round"/><path d="M52 62l40-46" stroke="#5B8DBF" stroke-width="3"/>`,
+ home:`<path d="M14 48L50 16l36 32v38H14z" fill="#FFD3B0" stroke="#C27A2C" stroke-width="3" stroke-linejoin="round"/><path d="M8 50L50 12l42 38" fill="none" stroke="#B5566E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="42" y="60" width="16" height="26" fill="#fff" stroke="#C27A2C" stroke-width="3"/><circle cx="50" cy="40" r="6" fill="#fff" stroke="#C27A2C" stroke-width="3"/>`,
+ money:`<circle cx="50" cy="50" r="38" fill="#FFE38A" stroke="#E0B23C" stroke-width="4"/><circle cx="50" cy="50" r="29" fill="none" stroke="#E0B23C" stroke-width="2" stroke-dasharray="4 4"/><text x="50" y="64" text-anchor="middle" font-family="Georgia,serif" font-size="40" font-weight="700" fill="#B8860B">$</text>`,
+ play:`<rect x="10" y="22" width="80" height="56" rx="18" fill="#F7A8C4" stroke="#D9668F" stroke-width="3"/><path d="M42 36l22 14-22 14z" fill="#fff"/>`,
+ laptop:`<rect x="18" y="20" width="64" height="44" rx="6" fill="#D9CCF5" stroke="#6B55A8" stroke-width="3"/><rect x="25" y="27" width="50" height="30" rx="3" fill="#fff"/><path d="M8 72h84l-6 10H14z" fill="#B9AAE4" stroke="#6B55A8" stroke-width="3" stroke-linejoin="round"/><path d="M33 42l7 6 12-12" stroke="#3F8466" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+ ring:`<circle cx="50" cy="62" r="24" fill="none" stroke="#F2C94C" stroke-width="8"/><path d="M38 30l12-16 12 16-12 10z" fill="#CFE6FA" stroke="#5B8DBF" stroke-width="3" stroke-linejoin="round"/>`,
+ leaf:`<path d="M20 84C20 40 50 14 88 12c0 40-26 70-68 72z" fill="#C7F0DB" stroke="#3F8466" stroke-width="3"/><path d="M20 84C40 60 56 42 76 26" stroke="#3F8466" stroke-width="3" fill="none"/>`
+};
+const STK_NAMES={sun:"Sun",moon:"Moon",star:"Star",heart:"Heart",flower:"Flower",butterfly:"Butterfly",rainbow:"Rainbow",sparkle:"Sparkle",cloud:"Cloud",plane:"Travel",home:"Home",money:"Money",play:"YouTube",laptop:"Career",ring:"Love",leaf:"Growth"};
+const stkSVG=k=>`<svg viewBox="0 0 100 100" aria-hidden="true">${STK[k]||""}</svg>`;
+const vbBoard=()=>{const v=doc("vision");if(!v.board)v.board={bg:"cream",items:[]};return v.board};
+const vbFind=id=>vbBoard().items.find(i=>i.id===id);
+function vbFS(it){const f=it.font||"hand",base={hand:.17,serif:.14,sans:.1}[f]||.15,cw={hand:.42,serif:.5,sans:.68}[f]||.5,len=Math.max(1,(it.text||"").length);return Math.max(it.w*.055,Math.min(it.w*base,it.w/(len*cw))).toFixed(2)}
+function vbItem(it,i,sel){
+  let inner="";
+  if(it.t==="text")inner=`<div class="vbt f-${it.font||"hand"}" style="color:${it.color||VB_COLS[0]};font-size:${vbFS(it)}cqw">${esc(it.text)}</div>`;
+  else if(it.t==="note")inner=`<div class="vbn" style="background:${it.color||VB_PAPER[0]}"><span class="f-${it.font||"hand"}" style="font-size:${(it.w*.11).toFixed(2)}cqw">${esc(it.text)}</span></div>`;
+  else if(it.t==="photo")inner=`<div class="vbp ${it.frame||"polaroid"}"><img src="${esc(it.src)}" alt="" draggable="false">${it.frame==="polaroid"&&it.text?`<span style="font-size:${(it.w*.09).toFixed(2)}cqw">${esc(it.text)}</span>`:""}</div>`;
+  else if(it.t==="sticker")inner=`<div class="vbs">${stkSVG(it.s)}</div>`;
+  else if(it.t==="tape")inner=`<div class="vbtape" style="--tc:${it.color||VB_TAPE[0]}"></div>`;
+  return `<div class="vbi ${sel?"sel":""}" data-vbi="${it.id}" style="left:${it.x}cqw;top:${it.y}cqw;width:${it.w}cqw;transform:rotate(${it.r||0}deg);z-index:${i+1}">${inner}${sel&&!S.vview?`<span class="vbh" data-vbh="${it.id}" aria-label="Resize or rotate"></span>`:""}</div>`;
+}
+function vbAdd(it){
+  const b=vbBoard();it.id=rid();it.x=it.x??(30+Math.random()*25);it.y=it.y??(35+Math.random()*40);it.r=it.r??Math.round(Math.random()*10-5);
+  b.items.push(it);S.vsel=it.id;save("vision");render();
+}
+function vbStarter(){
+  const v=doc("vision"),b=vbBoard(),add=o=>{o.id=rid();b.items.push(o)};
+  add({t:"sticker",s:"sun",x:72,y:6,w:20,r:0});
+  add({t:"text",text:(v.word||"Bloom"),font:"serif",color:"#6B55A8",x:18,y:8,w:52,r:-3});
+  const dreams=(v.top||[]).filter(x=>x&&x.trim());
+  (dreams.length?dreams:["My dream job","10k subscribers","Peace and joy"]).slice(0,3).forEach((d,i)=>add({t:"note",text:d,color:VB_PAPER[i],font:"hand",x:6+i*31,y:44+(i%2)*8,w:27,r:[-4,3,-2][i]}));
+  add({t:"tape",color:VB_TAPE[0],x:9,y:42,w:16,r:-12});add({t:"tape",color:VB_TAPE[1],x:71,y:48,w:16,r:10});
+  add({t:"sticker",s:"sparkle",x:4,y:86,w:12,r:0});add({t:"sticker",s:"heart",x:80,y:96,w:13,r:8});add({t:"sticker",s:"butterfly",x:44,y:96,w:15,r:-8});
+  add({t:"text",text:"I am so grateful it's all mine",font:"hand",color:"#B5566E",x:10,y:108,w:80,r:-2});
+  save("vision");render();
+}
+function vBoardMaker(){
+  const b=vbBoard(),v=doc("vision"),sel=S.vview?null:vbFind(S.vsel);
+  const fromJournal=[v.word,...(v.top||[]),...(v.believe||[])].filter(x=>x&&x.trim());
+  const board=`<div class="vboard bg-${b.bg}" id="vboard">${b.items.map((it,i)=>vbItem(it,i,sel&&sel.id===it.id)).join("")}
+     ${b.items.length?"":`<div class="vbempty"><div class="hand">Your board is waiting</div><p class="small">Add words, photos and stickers, or tap <b>Start me off</b>.</p></div>`}</div>`;
+  if(S.vview)return `<div class="fade" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><div class="eyebrow">My vision board</div><h1 style="font-size:2.2rem">Look. Feel it. Believe it.</h1></div><button class="btn" data-act="vbView">Edit my board</button></div>${board}
+    <p class="footline">${esc(v.believe&&v.believe.find(x=>x&&x.trim())||"Everything I'm dreaming of is already on its way to me.")}</p>`;
+  let ctx="";
+  if(sel){
+    const colours=(sel.t==="note"?VB_PAPER:sel.t==="tape"?VB_TAPE:VB_COLS);
+    ctx=`<div class="vbctx">
+      ${sel.t==="text"||sel.t==="note"||(sel.t==="photo"&&sel.frame==="polaroid")?`<input class="pill" type="text" id="vb-edit" value="${esc(sel.text||"")}" placeholder="${sel.t==="photo"?"Caption":"Your words"}" data-vbedit="${sel.id}">`:""}
+      ${sel.t!=="photo"&&sel.t!=="sticker"?`<div class="chips">${colours.map(c=>`<button class="vbsw ${sel.color===c?"on":""}" style="background:${c}" data-act="vbColor" data-v="${c}" aria-label="Colour"></button>`).join("")}</div>`:""}
+      ${sel.t==="text"||sel.t==="note"?`<div class="chips">${VB_FONTS.map(([k,n])=>`<button class="chip f-${k} ${ (sel.font||"hand")===k?"on":""}" data-act="vbFont" data-v="${k}">${n}</button>`).join("")}</div>`:""}
+      ${sel.t==="photo"?`<div class="chips">${[["polaroid","Polaroid"],["round","Circle"],["plain","Plain"],["heart","Heart"]].map(([k,n])=>`<button class="chip ${(sel.frame||"polaroid")===k?"on":""}" data-act="vbFrame" data-v="${k}">${n}</button>`).join("")}</div>`:""}
+      <div class="chips"><button class="chip" data-act="vbFront">Bring to front</button><button class="chip" data-act="vbCopy">Copy</button><button class="chip" data-act="vbDel">Remove</button><button class="chip" data-act="vbDone">Done</button></div>
+    </div>`;
+  }
+  return `
+  <div class="vbhead"><div><div class="eyebrow">Vision board · part three</div><h1>Make my board</h1>
+    <p class="lede">Drag pieces anywhere. Use the little corner handle to resize and turn them. Your board stays exactly as you leave it.</p></div>
+    <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">${b.items.length?"":`<button class="btn soft" data-act="vbStart">Start me off</button>`}<button class="btn" data-act="vbView">Look at my board</button></div></div>
+  <div class="vbtools">
+    <div class="addrow"><input class="pill" type="text" id="vb-word" placeholder="A word, a dream, a quote…" data-enter="vbWord"><button class="btn" data-act="vbWord">Add words</button></div>
+    <div class="chips">
+      <label class="chip" style="display:inline-flex;align-items:center;cursor:pointer">＋ Photo<input type="file" accept="image/*" id="vb-photo" hidden></label>
+      <button class="chip" data-act="vbNote">＋ Sticky note</button>
+      <button class="chip" data-act="vbTape">＋ Washi tape</button>
+      <button class="chip ${S.vstk?"on":""}" data-act="vbStk">＋ Stickers</button>
+    </div>
+    ${S.vstk?`<div class="vbstk">${Object.keys(STK).map(k=>`<button data-act="vbSticker" data-v="${k}" title="${STK_NAMES[k]}" aria-label="${STK_NAMES[k]} sticker">${stkSVG(k)}</button>`).join("")}</div>`:""}
+    ${fromJournal.length?`<div class="vbfrom"><span class="small muted">From your vision journal:</span> ${fromJournal.slice(0,7).map(t=>`<button class="chip" data-act="vbFrom" data-v="${esc(t)}">${esc(t.length>28?t.slice(0,28)+"…":t)}</button>`).join("")}</div>`:""}
+  </div>
+  ${ctx}
+  ${board}
+  <div class="spread" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+    <div class="chips"><span class="small muted" style="align-self:center">Background:</span>${VB_BG.map(([k,n])=>`<button class="chip ${b.bg===k?"on":""}" data-act="vbBg" data-v="${k}">${n}</button>`).join("")}</div>
+    ${b.items.length?`<button class="btn sm line2" data-act="vbClear">${S.confirm==="vbclear"?"Tap again to clear the board":"Clear board"}</button>`:""}
+  </div>
+  <p class="footline">Make it so beautiful you can't wait to look at it.</p>`;
+}
+
+/* dragging, resizing, rotating */
+let VBD=null;
+document.addEventListener("pointerdown",e=>{
+  if(S.vview)return;
+  const h=e.target.closest("[data-vbh]"),it=e.target.closest("[data-vbi]"),board=e.target.closest("#vboard");
+  if(!board)return;
+  if(!it&&!h){if(S.vsel){S.vsel=null;render()}return}
+  e.preventDefault();
+  const id=(h||it).dataset.vbh||(h||it).dataset.vbi,o=vbFind(id);if(!o)return;
+  const bw=board.getBoundingClientRect().width,k=100/bw;
+  if(h){const r=it.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    VBD={id,mode:"rs",cx,cy,d0:Math.hypot(e.clientX-cx,e.clientY-cy),a0:Math.atan2(e.clientY-cy,e.clientX-cx),w0:o.w,r0:o.r||0};}
+  else VBD={id,mode:"mv",sx:e.clientX,sy:e.clientY,x0:o.x,y0:o.y,k,moved:false};
+  if(S.vsel!==id){S.vsel=id;render()}
+});
+document.addEventListener("pointermove",e=>{
+  if(!VBD)return;const o=vbFind(VBD.id);if(!o)return;e.preventDefault();
+  if(VBD.mode==="mv"){o.x=Math.round((VBD.x0+(e.clientX-VBD.sx)*VBD.k)*10)/10;o.y=Math.round((VBD.y0+(e.clientY-VBD.sy)*VBD.k)*10)/10;
+    o.x=Math.max(-o.w*.6,Math.min(100-o.w*.4,o.x));o.y=Math.max(-5,Math.min(122,o.y));VBD.moved=true}
+  else{const d=Math.hypot(e.clientX-VBD.cx,e.clientY-VBD.cy),a=Math.atan2(e.clientY-VBD.cy,e.clientX-VBD.cx);
+    const nw=Math.max(6,Math.min(100,VBD.w0*d/Math.max(10,VBD.d0)));o.x+= (o.w-nw)/2;o.y+=(o.w-nw)/2*.5;o.w=Math.round(nw*10)/10;o.r=Math.round(VBD.r0+(a-VBD.a0)*180/Math.PI)}
+  const el=document.querySelector(`[data-vbi="${VBD.id}"]`);
+  if(el){el.style.left=o.x+"cqw";el.style.top=o.y+"cqw";el.style.width=o.w+"cqw";el.style.transform=`rotate(${o.r||0}deg)`;
+    const t=el.querySelector(".vbt");if(t)t.style.fontSize=vbFS(o)+"cqw";const n=el.querySelector(".vbn span,.vbp span");if(n)n.style.fontSize=(o.w*(o.t==="note"?.11:.09)).toFixed(2)+"cqw"}
+},{passive:false});
+document.addEventListener("pointerup",()=>{if(VBD){VBD=null;save("vision")}});
+document.addEventListener("pointercancel",()=>{if(VBD){VBD=null;save("vision")}});
+document.addEventListener("input",e=>{const id=e.target.dataset&&e.target.dataset.vbedit;if(!id)return;const o=vbFind(id);if(!o)return;o.text=e.target.value;save("vision");
+  const el=document.querySelector(`[data-vbi="${id}"] .vbt,[data-vbi="${id}"] .vbn span,[data-vbi="${id}"] .vbp span`);if(el)el.textContent=e.target.value;else render()});
+document.addEventListener("change",async e=>{
+  if(e.target.id!=="vb-photo"||!e.target.files||!e.target.files[0])return;
+  try{const blob=await shrink(e.target.files[0]);let src=null;
+    if(S.assets){try{src=(await S.assets.upload(blob)).url}catch(_){}}
+    if(!src)src=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(blob)});
+    vbAdd({t:"photo",src,frame:"polaroid",text:"",w:32});
+  }catch(_){toast("That photo couldn't be added. Try another one.")}
+});
+Object.assign(A,{
+  vbWord:()=>{const t=val("vb-word");if(t)vbAdd({t:"text",text:t,font:"hand",color:VB_COLS[1],w:Math.min(70,Math.max(24,t.length*3.2))})},
+  vbFrom:v=>vbAdd({t:"text",text:v,font:"hand",color:VB_COLS[2],w:Math.min(70,Math.max(24,v.length*3))}),
+  vbNote:()=>vbAdd({t:"note",text:"I am…",color:VB_PAPER[Math.floor(Math.random()*6)],font:"hand",w:26}),
+  vbTape:()=>vbAdd({t:"tape",color:VB_TAPE[Math.floor(Math.random()*VB_TAPE.length)],w:18,r:Math.round(Math.random()*30-15)}),
+  vbStk:()=>{S.vstk=!S.vstk;render()},
+  vbSticker:v=>vbAdd({t:"sticker",s:v,w:16}),
+  vbColor:v=>{const o=vbFind(S.vsel);if(o){o.color=v;save("vision");render()}},
+  vbFont:v=>{const o=vbFind(S.vsel);if(o){o.font=v;save("vision");render()}},
+  vbFrame:v=>{const o=vbFind(S.vsel);if(o){o.frame=v;save("vision");render()}},
+  vbFront:()=>{const b=vbBoard(),i=b.items.findIndex(x=>x.id===S.vsel);if(i>=0){b.items.push(b.items.splice(i,1)[0]);save("vision");render()}},
+  vbCopy:()=>{const o=vbFind(S.vsel);if(o){const c=JSON.parse(JSON.stringify(o));c.x+=4;c.y+=4;delete c.id;vbAdd(c)}},
+  vbDel:()=>{const b=vbBoard();b.items=b.items.filter(x=>x.id!==S.vsel);S.vsel=null;save("vision");render()},
+  vbDone:()=>{S.vsel=null;render()},
+  vbBg:v=>{vbBoard().bg=v;save("vision");render()},
+  vbStart:()=>vbStarter(),
+  vbView:()=>{S.vview=!S.vview;S.vsel=null;render();window.scrollTo({top:0})},
+  vbClear:()=>{if(S.confirm!=="vbclear"){S.confirm="vbclear";render();return}S.confirm=null;vbBoard().items=[];S.vsel=null;save("vision");render()}
+});
 
 render();
 connect();
