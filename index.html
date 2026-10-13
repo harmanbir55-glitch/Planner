@@ -1,0 +1,1260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Flourish">
+<meta name="theme-color" content="#F1E8D8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Flourish Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,600&display=swap">
+<style>
+/* Layout: a paper planner. A cover page, then cream paper sheets with binder tabs down the right edge
+   (a scrolling tab row on phones). --a / --b / --ink are the day's pastels, swapped in by script each date.
+   Single warm-paper look on purpose. */
+:root{
+  --a:#D9CCF5; --b:#FFF1A8; --ink:#6B55A8;
+  --desk:color-mix(in srgb,var(--a) 22%,#F1E8D8);
+  --paper:#FBF8F1; --card:#FFFDF8; --edge:#E6DCC8; --rule:color-mix(in srgb,var(--ink) 22%,#E6DCC8);
+  --text:#2E2A33; --muted:#6B6670;
+  --deep:color-mix(in srgb,var(--ink) 82%,#1d1a22);
+  --tintA:color-mix(in srgb,var(--a) 70%,#fff); --tintB:color-mix(in srgb,var(--b) 70%,#fff);
+  --serif:"Fraunces",Georgia,"Times New Roman",serif;
+  --sans:"DM Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --hand:"Caveat","Bradley Hand","Segoe Print",cursive;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--desk)}
+body{color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.5;transition:background .6s}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+input:focus,textarea:focus{outline:none}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+input::placeholder,textarea::placeholder{color:#9A9488}
+
+/* ---- the book ---- */
+.book{max-width:1010px;margin:0 auto;padding-inline:16px;padding-block:22px 40px;display:flex;align-items:flex-start}
+.sheet{flex:1;min-width:0;background:var(--paper);border-radius:26px;padding:34px 40px 40px;display:flex;flex-direction:column;gap:22px;position:relative}
+.binder{width:70px;flex:none;padding-top:54px;display:flex;flex-direction:column;gap:5px;position:sticky;top:env(safe-area-inset-top,0px);max-height:100vh;overflow-y:auto;scrollbar-width:none}
+.binder::-webkit-scrollbar{display:none}
+.binder button{border:0;width:50px;height:82px;border-radius:0 14px 14px 0;writing-mode:vertical-rl;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text);transition:width .2s}
+.binder button:nth-child(3n+1){background:var(--tintA)}
+.binder button:nth-child(3n+2){background:var(--tintB)}
+.binder button:nth-child(3n){background:color-mix(in srgb,var(--a) 35%,#EADFC9)}
+.binder button:hover{width:56px}
+.binder button[aria-current="true"]{width:62px;background:var(--deep);color:#FBF8F1}
+@media (max-width:760px){
+  .book{flex-direction:column-reverse;align-items:stretch;padding-block:10px 32px}
+  .binder{width:auto;max-width:100%;flex-direction:row;padding:0 10px;gap:4px;overflow-x:auto;overflow-y:hidden;position:static;max-height:none}
+  .binder button{writing-mode:horizontal-tb;width:auto;height:40px;padding:0 13px;border-radius:14px 14px 0 0;white-space:nowrap;flex:none;font-size:10px}
+  .binder button:hover{width:auto}
+  .binder button[aria-current="true"]{width:auto;height:46px;margin-top:-6px}
+  .sheet{padding:24px 18px 30px;border-radius:22px;gap:18px}
+}
+
+/* ---- type ---- */
+.eyebrow{font-size:11.5px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;color:var(--ink)}
+h1{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(2.3rem,7vw,3.5rem);line-height:1.02;color:var(--deep);margin:6px 0 0;text-wrap:balance}
+h2{font-family:var(--serif);font-weight:600;font-size:1.2rem;color:var(--deep);margin:0;text-wrap:balance}
+.hand{font-family:var(--hand);font-size:1.6rem;line-height:1.2;color:var(--deep)}
+.lede{margin:10px 0 0;color:var(--muted);font-size:1rem;max-width:34em}
+.muted{color:var(--muted)}.small{font-size:.84rem}
+.footline{margin:4px 0 0;text-align:center;font-family:var(--hand);font-size:1.7rem;color:var(--deep)}
+
+/* ---- top strip on each page ---- */
+.strip{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.swatch{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.swatch i{width:15px;height:15px;border-radius:50%;display:inline-block;margin-right:-4px;border:2px solid var(--paper)}
+.datebar{display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--edge);border-radius:999px;padding:3px}
+.datebar button{border:0;background:none;width:32px;height:32px;border-radius:50%;color:var(--deep);font-size:1.1rem}
+.datebar button:hover{background:var(--tintA)}
+.datebar .lbl{padding:0 6px;font-weight:700;font-size:.85rem;white-space:nowrap}
+.datebar .tb{width:auto;padding:0 10px;border-radius:999px;font-size:.75rem;font-weight:700;background:var(--tintB)}
+
+/* ---- page header with illustration ---- */
+.head{display:flex;gap:26px;align-items:center}
+.head > div{min-width:0}
+.banner{border-radius:22px;overflow:hidden;position:relative}
+.banner svg{display:block;width:100%;height:auto}
+.banner .over{position:absolute;left:28px;bottom:22px;right:28px}
+.arch{width:200px;max-width:42%;flex:none;aspect-ratio:200/250;border-radius:100px 100px 16px 16px;overflow:hidden}
+.arch svg{width:100%;height:100%;display:block}
+@media (max-width:560px){.head{flex-direction:column;align-items:flex-start;gap:14px}.arch{width:150px;max-width:60%}.banner .over{left:18px;bottom:14px}}
+
+/* ---- boxes ---- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px}
+.grid.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.45fr)}
+@media (max-width:700px){.grid.wide{grid-template-columns:minmax(0,1fr)}}
+.box{background:var(--card);border:1px solid var(--edge);border-radius:22px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.box.a{background:var(--tintA);border-color:transparent}
+.box.b{background:var(--tintB);border-color:transparent}
+.box.deep{background:var(--deep);border-color:transparent;color:#FBF8F1}
+.box.deep h2,.box.deep .hand{color:#FBF8F1}
+.box.deep .eyebrow{color:var(--b)}
+.box.dash{border-style:dashed;border-color:color-mix(in srgb,var(--ink) 30%,#CDBF9F)}
+.boxhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.count{font-family:var(--hand);font-size:1.5rem;color:var(--ink)}
+
+/* ---- fields ---- */
+.line{width:100%;min-width:0;border:0;border-bottom:1.5px solid var(--rule);background:transparent;padding:10px 2px;font-size:15px}
+.line:focus{border-bottom-color:var(--ink)}
+.box.deep .line{border-bottom-color:color-mix(in srgb,var(--b) 50%,transparent);color:#FBF8F1}
+.box.deep .line::placeholder{color:color-mix(in srgb,#fff 55%,transparent)}
+.lined{width:100%;border:0;resize:vertical;padding:0 2px;line-height:32px;font-size:15px;min-height:130px;
+  background:repeating-linear-gradient(transparent 0 31px,var(--rule) 31px 32px);background-attachment:local}
+.box.deep .lined{color:#FBF8F1;background:repeating-linear-gradient(transparent 0 31px,color-mix(in srgb,#fff 25%,transparent) 31px 32px)}
+.pagewrite{min-height:62vh;font-size:16.5px;line-height:34px;background:repeating-linear-gradient(transparent 0 33px,var(--rule) 33px 34px);background-attachment:local}
+.pill{height:44px;border:1px solid var(--edge);border-radius:14px;padding:0 14px;background:var(--paper);min-width:0;flex:1}
+.addrow{display:flex;gap:8px}
+.btn{height:44px;border:0;border-radius:14px;padding:0 18px;background:var(--ink);color:#fff;font-weight:700;white-space:nowrap}
+.btn.soft{background:var(--tintB);color:var(--deep)}
+.btn.line2{background:transparent;border:1px solid var(--edge);color:var(--deep)}
+.btn.sm{height:36px;padding:0 13px;border-radius:999px;font-size:.82rem}
+.box.deep .btn{background:var(--b);color:var(--deep)}
+.x{width:36px;height:36px;border:0;background:none;color:#9A9488;border-radius:10px;flex:none;font-size:1.05rem}
+.x:hover{background:var(--tintA);color:var(--deep)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--edge);background:var(--paper);font-size:.88rem}
+.chip.on{background:var(--deep);border-color:var(--deep);color:#FBF8F1}
+.chip.onb{background:var(--b);border-color:color-mix(in srgb,var(--ink) 40%,var(--b))}
+.box.a .chip,.box.b .chip{background:color-mix(in srgb,#fff 70%,transparent);border-color:transparent}
+.box.a .chip.on{background:var(--deep)}
+
+/* ---- lists ---- */
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.item{display:flex;align-items:center;gap:12px;min-height:46px;border-bottom:1px solid color-mix(in srgb,var(--edge) 70%,transparent);min-width:0}
+.item:last-child{border-bottom:0}
+.item .t{flex:1;min-width:0;overflow-wrap:anywhere}
+.item.done .t{text-decoration:line-through;text-decoration-color:var(--ink);color:var(--muted)}
+.tick{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--ink);background:transparent;display:grid;place-items:center;padding:0}
+.tick.on{background:var(--ink)}
+.tick svg{width:12px;height:12px}
+.empty{font-family:var(--hand);font-size:1.45rem;color:#9A9488;text-align:center;margin:8px 0}
+.num{font-family:var(--hand);font-size:1.9rem;color:var(--ink);width:22px;flex:none;text-align:center}
+.tag{font-size:.72rem;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--tintB);white-space:nowrap}
+
+/* ---- cover ---- */
+.cover{padding:64px 60px 54px;align-items:center;text-align:center;overflow:hidden;gap:0}
+.cover::before,.cover::after{content:"";position:absolute;pointer-events:none}
+.cover::before{inset:16px;border:1.5px solid color-mix(in srgb,var(--ink) 30%,#CDBF9F);border-radius:22px}
+.cover::after{inset:25px;border:1px dashed color-mix(in srgb,var(--ink) 22%,#DCCFB4);border-radius:17px}
+.cover .topline{width:100%;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:700;color:var(--muted);position:relative;z-index:1}
+.window{position:relative;margin-top:34px;width:min(400px,78%);aspect-ratio:440/540}
+.window .frame{position:absolute;inset:0;border-radius:200px 200px 20px 20px;overflow:hidden}
+.window .frame svg{width:100%;height:100%;display:block}
+.window .ghost{position:absolute;inset:0;transform:translate(14px,-12px);border:1.5px solid var(--ink);border-radius:200px 200px 20px 20px}
+.stamp{position:absolute;right:-60px;top:30px;width:130px;height:130px}
+.stamp svg{width:100%;height:100%;animation:spin 40s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.the{margin-top:30px;font-family:var(--hand);font-size:2.1rem;line-height:1;color:var(--ink)}
+.title{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(3.6rem,13vw,7.4rem);line-height:.92;letter-spacing:-.02em;color:var(--deep)}
+.planner{margin-top:12px;display:flex;align-items:center;gap:16px;font-size:13px;font-weight:700;letter-spacing:.55em;text-transform:uppercase;color:var(--deep)}
+.planner span{width:60px;height:1.5px;background:var(--ink)}
+.tagline{margin:18px 0 0;font-family:var(--serif);font-style:italic;font-size:1.2rem;color:var(--muted)}
+.owner{margin-top:26px;display:flex;flex-direction:column;align-items:center}
+.owner small{font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.owner b{font-family:var(--hand);font-weight:700;font-size:3.2rem;line-height:1.05;color:var(--ink)}
+.owner i{width:240px;max-width:100%;height:1.5px;background:color-mix(in srgb,var(--ink) 30%,#CDBF9F)}
+.covernav{margin-top:30px;display:flex;flex-wrap:wrap;justify-content:center;gap:9px;max-width:700px;position:relative;z-index:1}
+.covernav button{min-height:44px;padding:0 18px;border-radius:999px;border:0;font-size:.9rem;font-weight:500}
+.covernav button:nth-child(odd){background:var(--tintA)}
+.covernav button:nth-child(even){background:var(--tintB)}
+.covernav button.go{background:var(--deep);color:#FBF8F1;font-weight:700}
+.sprig{position:absolute;pointer-events:none;opacity:.95}
+@media (max-width:560px){.cover{padding:44px 22px 40px}.stamp{width:96px;height:96px;right:-30px;top:10px}.sprig{display:none}.owner b{font-size:2.6rem}}
+@media (prefers-reduced-motion:reduce){.stamp svg{animation:none}body{transition:none}}
+
+/* ---- jar ---- */
+.jar{display:flex;flex-direction:column;align-items:center}
+.jar .lid{width:64px;height:20px;border-radius:8px 8px 4px 4px;background:var(--ink)}
+.jar .neck{width:88px;height:13px;border:3px solid var(--deep);border-bottom:0;border-radius:6px 6px 0 0;background:var(--paper)}
+.jar .body{position:relative;width:200px;height:230px;border:3px solid var(--deep);border-radius:40px 40px 52px 52px;background:var(--paper);overflow:hidden}
+.jar .body span{position:absolute;width:21px;height:21px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--deep) 30%,transparent)}
+.jar .label{position:absolute;left:28px;right:28px;top:62px;padding:6px 0;background:var(--b);border-radius:6px;font-family:var(--hand);font-size:1.4rem;color:var(--deep);text-align:center}
+.slip{background:var(--paper);border-radius:14px;padding:12px 16px;border:1.5px dashed var(--ink);text-align:center}
+
+/* ---- week / month ---- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.stat{background:var(--card);border:1px solid var(--edge);border-radius:18px;padding:12px 14px}
+.stat:nth-child(odd){background:var(--tintA);border-color:transparent}
+.stat b{display:block;font-family:var(--serif);font-style:italic;font-weight:400;font-size:2rem;line-height:1.1;color:var(--deep);font-variant-numeric:tabular-nums}
+.stat span{font-size:.76rem;color:var(--muted);font-weight:500}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.86rem;font-variant-numeric:tabular-nums}
+th,td{padding:9px 6px;text-align:center;border-bottom:1px solid var(--edge);white-space:nowrap}
+th{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+td.l,th.l{text-align:left}
+.pdot{display:inline-flex;vertical-align:middle;margin-right:6px}
+.pdot i{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:-3px;border:1.5px solid var(--paper)}
+.bar{height:8px;border-radius:99px;background:color-mix(in srgb,var(--edge) 80%,transparent);overflow:hidden;min-width:50px}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:99px}
+.hg{display:inline-block;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--rule)}
+.hg.on{background:var(--ink);border-color:var(--ink)}
+.linkbtn{border:0;background:none;padding:0;font-weight:700;color:var(--text)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .dow{font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);text-align:center;font-weight:700}
+.cal button{aspect-ratio:1;max-width:100%;border:0;border-radius:12px;padding:5px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;font-family:var(--serif);font-size:.95rem;min-width:0;position:relative;overflow:hidden;color:var(--text)}
+.cal .fill{position:absolute;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--deep) 28%,transparent)}
+.cal button span{position:relative;font-family:var(--sans);font-size:.62rem}
+.cal button b{position:relative;font-weight:400}
+.cal button.today{outline:2px solid var(--deep);outline-offset:1px}
+.cal button.fut{opacity:.45}
+
+/* ---- vision ---- */
+.subnav{display:flex;gap:8px;flex-wrap:wrap}
+.subnav button{min-height:44px;padding:0 16px;border-radius:999px;border:0;background:var(--tintA);font-size:.9rem;font-weight:500}
+.subnav button.on{background:var(--deep);color:#FBF8F1}
+.step{display:flex;gap:16px;align-items:flex-start}
+.step .n{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-style:italic;font-size:1.2rem;background:var(--tintB);color:var(--deep)}
+.step .n.ok{background:var(--deep);color:#FBF8F1}
+.step .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.tile{position:relative;aspect-ratio:1;max-width:100%;border-radius:14px;overflow:hidden;display:grid;place-items:center;padding:10px;text-align:center;font-family:var(--hand);font-size:1.5rem;line-height:1.05;color:var(--deep)}
+.tile:nth-child(3n+1){transform:rotate(-1.5deg)}.tile:nth-child(3n){transform:rotate(1.2deg)}
+.tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tile .x{position:absolute;top:4px;right:4px;width:auto;min-width:28px;height:28px;background:color-mix(in srgb,#fff 85%,transparent);font-family:var(--sans);font-size:.8rem;padding:0 6px}
+.areaicon{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center}
+.areaicon svg{width:20px;height:20px}
+
+/* ---- youtube / jobs ---- */
+.vid{border:1px solid var(--edge);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.stages{display:flex;flex-wrap:wrap;gap:4px}
+.stages button{border:0;border-radius:999px;min-height:30px;padding:0 11px;font-size:.74rem;font-weight:700;background:color-mix(in srgb,var(--edge) 70%,transparent);color:var(--muted)}
+.stages button.past{background:var(--tintA);color:var(--deep)}
+.stages button.on{background:var(--deep);color:#FBF8F1}
+.app-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--edge)}
+.app-row select{border:1px solid var(--edge);border-radius:10px;background:var(--paper);padding:6px 8px;font-size:.84rem}
+.app-row .who{min-width:0;overflow-wrap:anywhere}
+details summary{cursor:pointer;font-weight:700;color:var(--deep)}
+details ul{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.dots{display:flex;flex-wrap:wrap;gap:6px}
+.dots i{width:16px;height:16px;border-radius:50%;border:2px solid var(--b);display:inline-block}
+.dots i.on{background:var(--b)}
+.dots .gap{width:8px;border:0}
+
+
+/* ---- type or pencil ---- */
+.modesw{display:inline-flex;align-self:flex-start;background:var(--paper);border:1px solid var(--edge);border-radius:999px;padding:3px;gap:2px}
+.modesw button{border:0;background:none;border-radius:999px;min-height:36px;padding:0 15px;font-size:.82rem;font-weight:700;color:var(--muted)}
+.modesw button.on{background:var(--deep);color:#FBF8F1}
+.inkbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;position:sticky;top:calc(env(safe-area-inset-top,0px) + 6px);z-index:3;background:var(--card);border:1px solid var(--edge);border-radius:18px;padding:6px 8px;box-shadow:0 4px 14px -10px rgba(0,0,0,.3)}
+.inkbar .sep{width:1px;height:24px;background:var(--edge);margin:0 2px}
+.inkbar .sw{width:32px;height:32px;border-radius:50%;border:2.5px solid var(--card);box-shadow:0 0 0 1.5px var(--edge);padding:0}
+.inkbar .sw.on{box-shadow:0 0 0 2.5px var(--deep)}
+.inkbar .size{width:36px;height:36px;border:0;border-radius:50%;background:none;display:grid;place-items:center}
+.inkbar .size i{display:block;border-radius:50%;background:var(--deep)}
+.inkbar .size.on{background:var(--tintA)}
+.inkbar .tool{min-height:34px;border:0;border-radius:999px;padding:0 12px;font-size:.8rem;font-weight:700;background:var(--tintB);color:var(--deep)}
+.inkbar .tool.on{background:var(--deep);color:#FBF8F1}
+.inkpad{position:relative;width:100%;min-height:200px;border-radius:12px;background:repeating-linear-gradient(transparent 0 33px,var(--rule) 33px 34px);touch-action:none;-webkit-user-select:none;user-select:none}
+.inkpad canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+/* ---- habit boxes ---- */
+.hb{display:inline-block;width:18px;height:18px;border-radius:5px;border:1.5px solid var(--rule);vertical-align:middle}
+.hb.on{border-color:transparent}
+.hb.fut{border-style:dashed;opacity:.5}
+.hgrid td,.hgrid th{padding:6px 3px}
+.year{display:flex;flex-direction:column;gap:4px;min-width:560px}
+.yrow{display:flex;align-items:center;gap:8px}
+.ym{width:30px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.ycells{display:grid;grid-template-columns:repeat(31,minmax(0,1fr));gap:3px;flex:1}
+.yb{aspect-ratio:1;border:1px solid var(--edge);border-radius:4px;padding:0;background:var(--paper);min-width:0}
+.yb.none{border:0;background:none}
+.yb.fut{border-style:dashed;opacity:.55}
+.yb.today{outline:2px solid var(--deep);outline-offset:1px}
+
+/* ---- celebrations ---- */
+#bloom{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:color-mix(in srgb,var(--paper) 55%,transparent);animation:bfade .35s ease;cursor:pointer;overflow:hidden}
+#bloom.out{opacity:0;transition:opacity .5s}
+.bloomcard{position:relative;z-index:2;background:var(--paper);border-radius:28px;padding:26px 30px 24px;max-width:min(360px,86vw);text-align:center;box-shadow:0 20px 50px -20px rgba(40,30,50,.45);animation:pop .55s cubic-bezier(.2,1.4,.4,1)}
+.bigflower{width:84px;height:84px;margin:-62px auto 6px;animation:open 1.1s cubic-bezier(.2,1.2,.4,1)}
+.bigflower svg,.petal svg{width:100%;height:100%;display:block}
+.bt{font-family:var(--serif);font-style:italic;font-size:1.7rem;line-height:1.15;color:var(--deep)}
+.bl{margin-top:8px;font-family:var(--hand);font-size:1.45rem;line-height:1.2;color:var(--ink)}
+.petal{position:absolute;left:50%;top:50%;margin:-15px 0 0 -15px;animation:fly 2.6s cubic-bezier(.15,.7,.3,1) var(--d) both}
+@keyframes fly{0%{transform:translate(0,0) scale(.2) rotate(0);opacity:0}15%{opacity:1}70%{opacity:1}100%{transform:translate(var(--x),calc(var(--y) + 140px)) scale(1) rotate(var(--r));opacity:0}}
+@keyframes open{0%{transform:scale(0) rotate(-120deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes pop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes bfade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.bloomcard,.bigflower,#bloom{animation:none}}
+
+.backup{position:relative;z-index:1;margin-top:26px;display:flex;flex-direction:column;align-items:center;gap:10px;max-width:440px;padding:16px 18px;border:1px dashed color-mix(in srgb,var(--ink) 30%,#CDBF9F);border-radius:18px}
+.backup .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);z-index:60;background:var(--deep);color:#FBF8F1;border-radius:999px;padding:12px 20px;font-weight:600;font-size:.9rem;max-width:90vw;text-align:center;box-shadow:0 10px 30px -12px rgba(0,0,0,.4);transition:opacity .4s}
+#toast.out{opacity:0}
+.sync{margin-top:6px;text-align:center;font-size:.78rem;color:var(--muted)}
+.sync i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#B9B2A4;margin-right:6px;vertical-align:middle}
+.sync.cloud i{background:#6F9A6A}
+.fade{animation:fade .45s ease}
+@keyframes fade{from{opacity:.55;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fade{animation:none}}
+</style>
+
+<div class="book">
+  <main class="sheet" id="main"></main>
+  <nav class="binder" id="tabs" aria-label="Planner sections"></nav>
+</div>
+<div class="sync" id="sync"><i></i>Saved on this device</div>
+<div hidden><span id="datelbl"></span><button id="todaybtn"></button></div>
+
+<script>
+/* ---------- daily content ---------- */
+const PALETTES=[
+ {n:"Lavender & Butter",a:"#D9CCF5",b:"#FFF1A8",ink:"#6B55A8"},
+ {n:"Peach & Pink",a:"#FFD3B0",b:"#FFC6DA",ink:"#B5566E"},
+ {n:"Mint & Lilac",a:"#C7F0DB",b:"#E3D3F7",ink:"#3F8466"},
+ {n:"Sky & Blush",a:"#CFE6FA",b:"#FAD4DC",ink:"#3F6E9A"},
+ {n:"Apricot & Pistachio",a:"#FFDDB8",b:"#D7EFC0",ink:"#A86330"},
+ {n:"Lemon & Periwinkle",a:"#FFF3A6",b:"#CCD3FA",ink:"#5560A8"},
+ {n:"Coral & Seafoam",a:"#FFC8BC",b:"#C2EDE6",ink:"#B4513F"},
+ {n:"Rose & Lavender",a:"#F9CFE0",b:"#DCD2F6",ink:"#A54C78"},
+ {n:"Butter & Mint",a:"#FFEDB0",b:"#C9F0DA",ink:"#8A6A16"},
+ {n:"Melon & Sky",a:"#FFD0C4",b:"#CBE7F5",ink:"#AE5B44"},
+ {n:"Lilac & Peach",a:"#E6D4F7",b:"#FFD9C0",ink:"#7A50A0"},
+ {n:"Pistachio & Rose",a:"#DCEFC4",b:"#F8CDD8",ink:"#5F8A3A"},
+ {n:"Periwinkle & Lemon",a:"#D1D8FA",b:"#FFF0A0",ink:"#4C5AA6"},
+ {n:"Bubblegum & Sage",a:"#FFC9E4",b:"#D3E8D0",ink:"#AA4A7E"}
+];
+const JPROMPTS=[
+ "What would make today feel light and good? Write it as if it's already happening.",
+ "Describe the version of you who wakes up loving her life. What does she do first this morning?",
+ "Write about three things you're excited to start. Use 'I am' and 'I have'.",
+ "What is one thing you're proud of from the last week, even if it was small?",
+ "If today went perfectly, what would tonight's journal say? Write it now.",
+ "What are you ready to let go of so you can feel lighter?",
+ "Write a kind letter to yourself from your best friend.",
+ "What does your dream ordinary Tuesday look like, from morning to night?",
+ "Which of your qualities are you grateful for today, and how will you use them?",
+ "What's a small brave thing you can do today?",
+ "Write about a moment recently when you felt completely like yourself.",
+ "What do you want more of in your life? Describe it as if you already have it.",
+ "What would you do today if you knew you couldn't fail?",
+ "Name a worry, then write the calm, wise answer your future self would give it.",
+ "What does 'enough' feel like for you right now?",
+ "Write about the place you feel most at peace. Put yourself there for a minute.",
+ "Which new habit is quietly changing your life? How does it feel to keep it?",
+ "What did your younger self dream about that you're living now?",
+ "List the good things that are already on their way to you.",
+ "What energy do you want to bring into every room today?",
+ "Write about someone who believes in you and what they see in you.",
+ "What are you starting today, and why does it matter to you?",
+ "How do you want to feel at the end of this week? Write it as if it's Sunday night.",
+ "What does taking care of yourself look like today, in three small steps?",
+ "Describe your life one year from now, in the present tense.",
+ "What are you curious about lately? Where could that curiosity take you?",
+ "Write about a challenge you handled well. What does it prove about you?",
+ "What would you like to hear today? Write it to yourself.",
+ "Where in your life are you already abundant?",
+ "What does your ideal creative day look like? Make it vivid.",
+ "Which three words describe the woman you're becoming? Show each one in a sentence.",
+ "What's something beautiful you noticed yesterday?",
+ "What can you say yes to today, and what can you say no to?",
+ "Write about your dream home: the light, the smell, the sounds in the morning.",
+ "What is one thing you'll do today just for joy?",
+ "Who are you when you're not worrying about anyone's opinion?",
+ "What progress have you made that nobody sees? Celebrate it here.",
+ "Write down everything you're looking forward to, big and small.",
+ "If your life was a book, what is the title of this chapter, and how does it end?",
+ "What does a good morning routine feel like for you? Describe it as already true.",
+ "What's a compliment you received that you secretly loved?",
+ "What are you ready to receive this month?",
+ "Write about the moment you knew you were growing.",
+ "What would make you smile at 9pm tonight?",
+ "Which dream feels closest right now? Write the scene where it comes true."
+];
+const AFFIRM=[
+ "I am becoming the woman I dreamed of, one soft day at a time.",
+ "Good things find me easily, and I welcome them.",
+ "I trust the timing of my life.",
+ "I am allowed to take up space and shine.",
+ "Money, love and opportunities flow to me with ease.",
+ "I am calm, focused and proud of how far I've come.",
+ "Everything I need is already within me.",
+ "My ideas are valuable, and people love what I create.",
+ "I choose joy, and joy chooses me back.",
+ "I am worthy of rest, love and big dreams.",
+ "My future is bright, and I'm walking into it today.",
+ "I keep promises to myself, and it feels amazing.",
+ "I attract people who lift me higher.",
+ "I am open to surprises and miracles.",
+ "Every day I grow more confident and more free.",
+ "My body is strong, and I treat it with love.",
+ "I have more than enough, and more is coming.",
+ "I believe in myself, even on slow days.",
+ "My channel grows because I show up as myself.",
+ "The right job is looking for me too.",
+ "I let go of what I can't control and enjoy what I can.",
+ "Today I am exactly where I need to be.",
+ "I am magnetic, creative and kind.",
+ "My dreams are not too big. They are my size.",
+ "I deserve the beautiful life I'm building.",
+ "I celebrate small wins, because they become big ones.",
+ "I am grateful for what I have and excited for what's coming.",
+ "Peace is my natural state.",
+ "I am proud of the effort I put in today.",
+ "I am the main character of a gentle, beautiful story."
+];
+const PRACTICES=[
+ {k:"script",t:"Scripting",how:"Write about one evening in your dream life, in the present tense, as if it's already yours. Add what you see, hear and feel.",ph:"It's 8pm and I'm…"},
+ {k:"369",t:"3-6-9",how:"Write one intention below. Tap a dot each time you say or write it: 3 in the morning, 6 in the afternoon, 9 at night.",ph:"I am so happy and grateful now that…"},
+ {k:"future",t:"Letter from future you",how:"You, one year from now, write a letter to today's you. Tell her what came true and what to stop worrying about.",ph:"Dear me, you won't believe how…"},
+ {k:"advance",t:"Thank you in advance",how:"Thank the universe for three things as if they already arrived. Feel the relief and joy of having them.",ph:"Thank you for…"},
+ {k:"actas",t:"Act as if",how:"How does the version of you who already has it spend today? Pick one small thing she'd do and do it.",ph:"Today, as her, I will…"},
+ {k:"signs",t:"Signs and evidence",how:"List the little signs, coincidences and wins that show your dreams are already on their way.",ph:"I noticed…"}
+];
+const GFORMATS=[
+ {k:"jar",t:"The gratitude jar",how:"Write a little slip for each thing you're grateful for and drop it in the jar."},
+ {k:"joys",t:"Three tiny joys",how:"Small is perfect. Catch three tiny joys."},
+ {k:"note",t:"A thank-you note",how:"Write a short thank-you to someone, even if you never send it."},
+ {k:"senses",t:"Five senses",how:"Ground yourself. One thing for each sense that you're grateful for."}
+];
+const JOYS=["A tiny joy from yesterday","Someone who made my day better","Something I love about myself"];
+const SENSES=["Something I saw","Something I heard","Something I tasted","Something I touched or felt","Something I smelled"];
+const MOODS=["Calm","Happy","Excited","Tired","Low","Anxious"];
+const AREAS=[
+ {k:"me",t:"Me & my mind",q:"Confidence, peace, how I talk to myself"},
+ {k:"body",t:"Body & health",q:"Energy, movement, food, sleep, skin"},
+ {k:"love",t:"Love & friends",q:"Family, partner, friendships, community"},
+ {k:"home",t:"Home & space",q:"Where I live, how it feels, what's in it"},
+ {k:"work",t:"Career & money",q:"The job, income, savings, freedom"},
+ {k:"create",t:"Creativity & YouTube",q:"My channel, ideas, what I make"},
+ {k:"fun",t:"Travel & fun",q:"Places, adventures, little pleasures"}
+];
+const STAGES=["Idea","Script","Film","Edit","Ready","Posted"];
+const STATUSES=["Saved","Applied","Interview","Offer","Not this time"];
+const TABS=[["home","Home"],["today","Day"],["journal","Morning"],["gratitude","Gratitude"],["manifest","Manifest"],["week","Week"],["month","Month"],["year","Year"],["vision","Vision"],["youtube","YouTube"],["jobs","Jobs"],["dump","Brain dump"]];
+const FULL={today:"Daily page",journal:"Morning journal",gratitude:"Gratitude",manifest:"Manifestation",week:"Weekly",month:"Monthly",year:"Yearly",vision:"Vision board",youtube:"YouTube studio",jobs:"Job search",dump:"Brain dump"};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const dkey=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parse=k=>{const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d)};
+const dayNum=k=>{const[y,m,d]=k.split("-").map(Number);return Math.floor(Date.UTC(y,m-1,d)/864e5)};
+const addDays=(k,n)=>{const d=parse(k);d.setDate(d.getDate()+n);return dkey(d)};
+const weekStart=k=>{const d=parse(k);d.setDate(d.getDate()-((d.getDay()+6)%7));return dkey(d)};
+const fmt=(k,o)=>parse(k).toLocaleDateString(undefined,o);
+const rid=()=>Math.random().toString(36).slice(2,9);
+const words=s=>(s||"").trim().split(/\s+/).filter(Boolean).length;
+const todayKey=()=>dkey(new Date());
+const pal=k=>PALETTES[((dayNum(k)*5)%14+14)%14];
+const pick=(arr,k,shift=0)=>arr[((dayNum(k)*7+shift)%arr.length+arr.length)%arr.length];
+const gformat=k=>GFORMATS[Math.floor(dayNum(k)/2)%GFORMATS.length];
+const practice=k=>PRACTICES[dayNum(k)%PRACTICES.length];
+
+/* ---------- state + saving ---------- */
+const S={docs:{},view:todayKey(),tab:"home",vtab:"figure",db:null,uid:null,assets:null,cloud:false,shift:{},jarPick:null,edit:{},confirm:null};
+const LSK="pastel-days-v1";
+try{const o=JSON.parse(localStorage.getItem(LSK)||"{}");S.docs=o.docs||{};}catch(e){}
+const lsSave=()=>{try{localStorage.setItem(LSK,JSON.stringify({docs:S.docs,tab:S.tab}))}catch(e){}};
+
+const newDay=()=>({journal:"",top3:["","",""],todos:[],habits:{},mood:"",proud:"",grat:{items:[],to:"",note:""},man:{text:"",claimed:false,c369:0}});
+const DEF={
+ settings:()=>({habits:[{id:"h1",name:"Drink 8 glasses of water"},{id:"h2",name:"Move for 20 minutes"},{id:"h3",name:"Read 10 pages"},{id:"h4",name:"No phone for the first hour"},{id:"h5",name:"Skincare morning + night"},{id:"h6",name:"In bed by 11"}],
+   ytList:["Title has words people search for","Thumbnail made and readable on a phone","Description with links and timestamps","Hashtags and tags added","End screen and cards set","Upload time scheduled","Pinned a comment with a question","Cut a Short or clip from it","Shared to Pinterest and Instagram","Replied to the first comments"],
+   jobList:["Update resume or portfolio","Hit my applications goal","Message 2 people on LinkedIn","Follow up on last week's applications","Learn a skill for one hour","Practise one interview answer out loud"],
+   jobGoal:5,ytGoal:1}),
+ vision:()=>({word:"",areas:{},top:["","",""],tiles:[],feel:"",believe:["","",""],steps:[{t:"",done:false},{t:"",done:false},{t:"",done:false}]}),
+ yt:()=>({videos:[],ideas:[]}),
+ jobs:()=>({apps:[],weeks:{}}),
+ dump:()=>({items:[],notes:""})
+};
+const doc=id=>{if(!S.docs[id])S.docs[id]=id.startsWith("d-")?newDay():DEF[id]();return S.docs[id]};
+const peekDay=k=>S.docs["d-"+k];
+const timers={};
+function save(id){
+  const d=S.docs[id];if(!d)return;d._t=Date.now();lsSave();
+  clearTimeout(timers[id]);timers[id]=setTimeout(()=>{delete timers[id];push(id)},700);
+}
+async function push(id){
+  if(!S.db||!S.uid)return;
+  try{await S.db.doc("data/users/"+S.uid+"/"+id).set(JSON.parse(JSON.stringify(S.docs[id])));setSync(true)}catch(e){setSync(false)}
+}
+function setSync(ok){
+  const el=$("#sync");S.cloud=ok;
+  el.className="sync"+(ok?" cloud":"");
+  el.innerHTML="<i></i>"+(ok?"Saved to your Claude account, so it's the same on your Mac and iPhone":"Saved on this device");
+}
+async function pull(){
+  if(!S.db||!S.uid)return;
+  const snap=await S.db.collection("data/users/"+S.uid).get();
+  const remote={};snap.docs.forEach(d=>{remote[d.id]=d.data()});
+  for(const k in remote){const l=S.docs[k];if(!l||(remote[k]._t||0)>=(l._t||0))S.docs[k]=remote[k]}
+  for(const k in S.docs){if(!remote[k]||(S.docs[k]._t||0)>(remote[k]._t||0))push(k)}
+  lsSave();setSync(true);render();
+}
+async function connect(){
+  for(let i=0;i<40&&!(window.claude&&window.claude.use);i++)await new Promise(r=>setTimeout(r,100));
+  if(!(window.claude&&window.claude.use))return;
+  try{
+    const[db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+    if(!db||!user)return;
+    const id=await user.id();if(!id)return;
+    S.db=db;S.uid=id;await pull();
+  }catch(e){}
+  try{S.assets=await claude.use("assets")}catch(e){}
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState!=="visible")return;
+  if(!Object.keys(timers).length&&!/TEXTAREA|INPUT/.test(document.activeElement?.tagName||""))pull().catch(()=>{});
+});
+
+function setPath(o,path,v){const p=path.split(".");let c=o;for(let i=0;i<p.length-1;i++){const k=p[i];if(c[k]==null)c[k]=/^\d+$/.test(p[i+1])?[]:{};c=c[k]}c[p[p.length-1]]=v}
+function getPath(o,path){return path.split(".").reduce((c,k)=>c==null?undefined:c[k],o)}
+const bind=(id,path,ph,tag="input",extra="")=>{
+  const d=S.docs[id];const v=d?getPath(d,path):"";
+  const eid="f-"+id+"-"+path.replace(/\./g,"-");
+  return tag==="textarea"
+   ?`<textarea id="${eid}" data-doc="${id}" data-path="${path}" placeholder="${esc(ph)}" ${extra}>${esc(v)}</textarea>`
+   :`<input type="text" id="${eid}" data-doc="${id}" data-path="${path}" placeholder="${esc(ph)}" value="${esc(v)}" ${extra}>`;
+};
+
+/* ---------- drawing helpers ---------- */
+function hex2rgb(h){h=h.replace("#","");if(h.length===3)h=h.split("").map(c=>c+c).join("");return[0,2,4].map(i=>parseInt(h.slice(i,i+2),16))}
+function mix(h1,h2,t){const a=hex2rgb(h1),b=hex2rgb(h2);return"#"+a.map((v,i)=>Math.round(v+(b[i]-v)*t).toString(16).padStart(2,"0")).join("")}
+const line=(id,path,ph)=>bind(id,path,ph,"input",'class="line"');
+const lined=(id,path,ph,h)=>bind(id,path,ph,"textarea",`class="lined"${h?` style="min-height:${h}px"`:""}`);
+const TICK=`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>`;
+const tick=(on,act,v,extra="")=>`<button class="tick ${on?"on":""}" data-act="${act}" data-v="${v}" ${extra} aria-pressed="${!!on}" aria-label="Tick">${on?TICK:""}</button>`;
+
+/* a sunrise over soft hills, painted in the day's pastels */
+function sky(w,h,sx,sy,extra=""){
+  const p=pal(S.view),sun=mix(p.b,"#F29A5C",.45);
+  return `<rect width="${w}" height="${h}" fill="${mix(p.a,"#fff",.55)}"/>
+  <circle cx="${sx}" cy="${sy}" r="${h*.48}" fill="${mix(p.b,"#fff",.35)}"/>
+  <circle cx="${sx}" cy="${sy}" r="${h*.35}" fill="${mix(p.b,sun,.4)}"/>
+  <circle cx="${sx}" cy="${sy}" r="${h*.24}" fill="${sun}"/>
+  <path d="M${w*.12} ${h*.25} q9 -9 18 0 q9 -9 18 0 M${w*.2} ${h*.16} q7 -7 14 0 q7 -7 14 0 M${w*.72} ${h*.3} q6 -6 12 0 q6 -6 12 0" fill="none" stroke="${p.ink}" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M0 ${h*.66} C ${w*.2} ${h*.55} ${w*.38} ${h*.62} ${w*.55} ${h*.63} S ${w*.86} ${h*.55} ${w} ${h*.6} V${h} H0 Z" fill="${mix(p.a,p.ink,.18)}"/>
+  <path d="M0 ${h*.76} C ${w*.25} ${h*.68} ${w*.45} ${h*.78} ${w*.66} ${h*.74} S ${w*.9} ${h*.69} ${w} ${h*.72} V${h} H0 Z" fill="${mix(p.b,p.ink,.25)}"/>
+  <path d="M0 ${h*.88} C ${w*.3} ${h*.8} ${w*.56} ${h*.92} ${w} ${h*.84} V${h} H0 Z" fill="${mix(p.ink,"#fff",.25)}"/>${extra}`;
+}
+function banner(eyebrow,title,extra="",lede=""){
+  const w=800,h=250;
+  return `<div class="banner fade"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${sky(w,h,600,190,extra)}</svg>
+   <div class="over"><div class="eyebrow">${eyebrow}</div><h1>${title}</h1>${lede}</div></div>`;
+}
+const MUG=`<g transform="translate(680 140)"><path d="M10 40 h52 v30 a20 20 0 0 1 -20 20 h-12 a20 20 0 0 1 -20 -20 z" fill="#FBF8F1" stroke="#3a3440" stroke-width="2.5"/><path d="M62 50 h6 a10 10 0 0 1 0 20 h-6" fill="none" stroke="#3a3440" stroke-width="2.5"/><path d="M26 30 q-6 -8 0 -16 q6 -8 0 -16 M42 30 q-6 -8 0 -16 q6 -8 0 -16" fill="none" stroke="#3a3440" stroke-width="2" stroke-linecap="round"/></g>`;
+function archScene(kind){
+  const p=pal(S.view);
+  const mtn=kind==="mtn"?`<path d="M0 170 L60 90 L100 140 L140 80 L200 160 V250 H0 Z" fill="${mix(p.a,p.ink,.3)}"/><path d="M60 90 L72 108 L62 104 L52 112 Z M140 80 L154 98 L142 94 L130 102 Z" fill="#FBF8F1"/>`:"";
+  return `<div class="arch"><svg viewBox="0 0 200 250" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${sky(200,250,128,120,mtn)}</svg></div>`;
+}
+function sprig(flip){
+  const p=pal(S.view),st=mix(p.ink,"#7a8a6a",.5),l1=mix(p.a,p.ink,.25),l2=mix(p.b,p.ink,.3);
+  return `<svg width="190" height="250" viewBox="0 0 230 300" aria-hidden="true" ${flip?'style="transform:scaleX(-1)"':""}>
+  <path d="M20 300 C 40 230 70 160 150 40" fill="none" stroke="${st}" stroke-width="2.5" stroke-linecap="round"/>
+  ${[[52,220,-50,l1],[78,214,20,l2],[72,168,-55,l1],[102,160,15,l2],[100,114,-60,l1],[128,104,10,l2],[140,56,-70,l1]].map(([x,y,r,c])=>`<ellipse cx="${x}" cy="${y}" rx="25" ry="10.5" fill="${c}" transform="rotate(${r} ${x} ${y})"/>`).join("")}
+  <circle cx="152" cy="36" r="9" fill="${mix(p.b,"#F29A5C",.45)}"/></svg>`;
+}
+function strip(){
+  const p=pal(S.view),isT=S.view===todayKey();
+  return `<div class="strip"><span class="swatch"><span class="pdot"><i style="background:${p.a}"></i><i style="background:${p.b}"></i></span>${p.n} day</span>
+   <div class="datebar"><button data-act="prev" aria-label="Previous day">‹</button><span class="lbl">${isT?"Today · ":""}${fmt(S.view,{weekday:"short",day:"numeric",month:"short"})}</span><button data-act="next" aria-label="Next day">›</button>${isT?"":`<button class="tb" data-act="today">Today</button>`}</div></div>`;
+}
+
+/* ---------- render ---------- */
+function applyPalette(){
+  const p=pal(S.view),r=document.documentElement.style;
+  r.setProperty("--a",p.a);r.setProperty("--b",p.b);r.setProperty("--ink",p.ink);
+}
+function render(){
+  const ae=document.activeElement,aid=ae&&ae.id,sel=ae&&ae.selectionStart!=null?[ae.selectionStart,ae.selectionEnd]:null;
+  applyPalette();
+  $("#tabs").innerHTML=TABS.map(([k,t])=>`<button data-act="tab" data-v="${k}" aria-current="${S.tab===k}">${t}</button>`).join("");
+  const V={home:vHome,today:vToday,journal:vJournal,gratitude:vGratitude,manifest:vManifest,week:vWeek,month:vMonth,year:vYear,vision:vVision,youtube:vYT,jobs:vJobs,dump:vDump}[S.tab]||vHome;
+  const m=$("#main");m.className="sheet"+(S.tab==="home"?" cover":"");
+  m.innerHTML=(S.tab==="home"?"":strip())+V();
+  mountInks();
+  if(aid){const el=document.getElementById(aid);if(el){el.focus({preventScroll:true});if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch(e){}}}
+}
+
+function vHome(){
+  const k=S.view,p=pal(k);
+  return `
+  <div class="sprig" style="left:6px;top:400px">${sprig(false)}</div>
+  <div class="sprig" style="right:6px;bottom:150px">${sprig(true)}</div>
+  <div class="topline"><span>${p.n} edition</span><span>${fmt(k,{weekday:"long",day:"numeric",month:"long"})}</span></div>
+  <div class="window fade">
+    <div class="ghost"></div>
+    <div class="frame"><svg viewBox="0 0 440 540" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A sunrise over soft hills in today's colours">${sky(440,540,220,300)}</svg></div>
+    <div class="stamp"><svg viewBox="0 0 150 150" role="img" aria-label="Plan, write, dream, bloom">
+      <defs><path id="ring" d="M75,75 m-52,0 a52,52 0 1,1 104,0 a52,52 0 1,1 -104,0"/></defs>
+      <circle cx="75" cy="75" r="72" fill="${mix(p.ink,"#1d1a22",.18)}"/>
+      <circle cx="75" cy="75" r="66" fill="none" stroke="${p.b}" stroke-width="1" stroke-dasharray="2 4"/>
+      <text font-family="DM Sans, sans-serif" font-size="11.5" font-weight="700" letter-spacing="2.2" fill="#FBF8F1"><textPath href="#ring">PLAN · WRITE · DREAM · BLOOM · GLOW ·</textPath></text>
+      <circle cx="75" cy="75" r="15" fill="${p.b}"/>
+      <path d="M75 50 v8 M75 92 v8 M50 75 h8 M92 75 h8 M57 57 l6 6 M87 87 l6 6 M93 57 l-6 6 M63 87 l-6 6" stroke="${p.a}" stroke-width="2.2" stroke-linecap="round"/>
+    </svg></div>
+  </div>
+  <div class="the">the</div>
+  <div class="title">Flourish</div>
+  <div class="planner"><span></span>Planner<span></span></div>
+  <p class="tagline">soft mornings · new colours every day · big dreams</p>
+  <div class="owner"><small>this planner belongs to</small><b>Harmanbir</b><i></i></div>
+  <nav class="covernav" aria-label="Open a section">
+    <button class="go" data-act="tab" data-v="journal">Start my morning</button>
+    ${TABS.filter(t=>t[0]!=="home").map(([v,t])=>`<button data-act="tab" data-v="${v}">${FULL[v]||t}</button>`).join("")}
+  </nav>
+  <p class="footline">${esc(pick(AFFIRM,k))}</p>
+  <div class="backup">
+    <div class="eyebrow">Backup &amp; restore</div>
+    <div class="row"><button class="btn sm soft" data-act="backup">Save a backup</button><label class="btn sm line2" style="display:inline-flex;align-items:center;cursor:pointer">Restore a backup<input type="file" id="restore-file" accept=".json,application/json" hidden></label></div>
+    <p class="small muted" style="margin:0">Save a backup on one device, send the file to your other device (AirDrop works), then tap Restore there. Nothing is ever deleted. Only newer pages are added.</p>
+  </div>`;
+}
+
+function vToday(){
+  const k=S.view,id="d-"+k,d=peekDay(k)||newDay(),st=doc("settings");
+  const done=d.todos.filter(t=>t.done).length,hab=st.habits.filter(x=>d.habits[x.id]).length;
+  const g=gformat(k),pr=practice(k);
+  const gcount=(d.grat.items||[]).filter(Boolean).length+(d.grat.note?1:0);
+  return `
+  <div class="head fade">${archScene()}
+    <div><div class="eyebrow">Daily page · ${fmt(k,{weekday:"long"})}</div><h1>Soft plans<br>for today</h1>
+    <p class="lede">Three things that matter, the little to-dos, and the habits that make you feel good.</p></div></div>
+  <div class="grid">
+    <section class="box deep"><div class="eyebrow">Top 3 for today</div>
+      ${[0,1,2].map(i=>`<label class="row" style="display:flex;align-items:center;gap:10px"><span class="num" style="color:var(--b)">${i+1}</span>${line(id,"top3."+i,["The one that matters most","Then this","And this"][i])}</label>`).join("")}
+    </section>
+    <section class="box"><div class="boxhead"><h2>To-do list</h2>${d.todos.length?`<span class="count">${done}/${d.todos.length}</span>`:""}</div>
+      <ul class="list">${d.todos.map((t,i)=>`<li class="item ${t.done?"done":""}">${tick(t.done,"todo",i)}<span class="t">${esc(t.t)}</span><button class="x" data-act="todoDel" data-v="${i}" aria-label="Remove">✕</button></li>`).join("")||`<li class="empty">your list starts here</li>`}</ul>
+      <div class="addrow"><input class="pill" type="text" id="todo-new" placeholder="Add a to-do…" data-enter="todoAdd"><button class="btn" data-act="todoAdd">Add</button></div>
+    </section>
+  </div>
+  <section class="box a"><div class="boxhead"><h2>Little habits</h2><span class="count">${hab}/${st.habits.length}</span></div>
+    <div class="chips">${st.habits.map(x=>`<button class="chip ${d.habits[x.id]?"on":""}" data-act="habit" data-v="${x.id}" aria-pressed="${!!d.habits[x.id]}">${d.habits[x.id]?"✓ ":""}${esc(x.name)}</button>`).join("")}</div>
+    ${S.edit.habits?`<ul class="list">${st.habits.map(x=>`<li class="item"><span class="t">${esc(x.name)}</span><button class="x" data-act="habitDel" data-v="${x.id}" aria-label="Remove habit">✕</button></li>`).join("")}</ul>
+      <div class="addrow"><input class="pill" type="text" id="habit-new" placeholder="A new habit" data-enter="habitAdd"><button class="btn" data-act="habitAdd">Add</button></div>`:""}
+    <button class="btn sm line2" data-act="edit" data-v="habits" style="align-self:flex-start">${S.edit.habits?"Done":"Change my habits"}</button>
+  </section>
+  <div class="grid">
+    <section class="box b"><h2>How I feel today</h2>
+      <div class="chips">${MOODS.map(m=>`<button class="chip ${d.mood===m?"on":""}" data-act="mood" data-v="${m}">${m}</button>`).join("")}</div>
+      ${line(id,"proud","One thing I'm proud of today…")}
+    </section>
+    <section class="box dash"><h2>Today's other pages</h2>
+      <ul class="list">
+        <li class="item"><span class="t"><b>Morning journal</b><br><span class="small muted">${d.journal?words(d.journal)+" words written":hasInk(inkKey(id,"journal"))?"Handwritten page":"Your page is waiting"}</span></span><button class="btn sm soft" data-act="tab" data-v="journal">Open</button></li>
+        <li class="item"><span class="t"><b>${g.t}</b><br><span class="small muted">${gcount?gcount+" grateful thing"+(gcount>1?"s":""):"Nothing yet today"}</span></span><button class="btn sm soft" data-act="tab" data-v="gratitude">Open</button></li>
+        <li class="item"><span class="t"><b>${pr.t}</b><br><span class="small muted">${d.man.claimed?"Affirmation claimed":"Today's manifesting practice"}</span></span><button class="btn sm soft" data-act="tab" data-v="manifest">Open</button></li>
+      </ul>
+    </section>
+  </div>
+  <p class="footline">Small steps every day add up to big dreams.</p>`;
+}
+
+function vJournal(){
+  const k=S.view,id="d-"+k,d=peekDay(k)||newDay();
+  const past=[];for(let i=1;i<=60&&past.length<6;i++){const pk=addDays(k,-i),pd=peekDay(pk);if(pd&&pd.journal)past.push([pk,pd.journal]);else if(hasInk(inkKey("d-"+pk,"journal")))past.push([pk,"✎ Handwritten page"])}
+  return `
+  ${banner("Morning journal · "+fmt(k,{day:"numeric",month:"long"}),"Good morning,<br>Harmanbir",MUG)}
+  <div class="grid wide">
+    <section class="box deep"><div class="eyebrow">Today's affirmation</div><div class="hand" style="font-size:1.9rem">“${esc(pick(AFFIRM,k))}”</div><p class="small" style="margin:0;opacity:.8">Say it out loud three times. Mean it a little more each time.</p></section>
+    <section class="box b"><div class="boxhead"><div class="eyebrow">Today's prompt</div><button class="btn sm" data-act="shift">Another prompt</button></div>
+      <div class="hand">${esc(pick(JPROMPTS,k,S.shift[k]||0))}</div></section>
+  </div>
+  <section class="box">
+    <div class="boxhead"><h2>My page</h2><span class="small muted" id="wc">${words(d.journal)} words · saves as you type</span></div>
+    ${writeArea(id,"journal","Start writing in the present tense: I am, I have, I feel…",560,"lined pagewrite")}
+  </section>
+  <section class="box dash"><h2>Past pages</h2>
+    ${past.length?`<ul class="list">${past.map(([pk,t])=>`<li class="item"><button class="linkbtn" data-act="go" data-v="${pk}" style="white-space:nowrap">${fmt(pk,{weekday:"short",day:"numeric",month:"short"})}</button><span class="t small muted">${esc(t.slice(0,90))}${t.length>90?"…":""}</span></li>`).join("")}</ul>`:`<p class="empty">your earlier pages will gather here</p>`}
+  </section>
+  <p class="footline">The page is yours. Nothing has to be perfect.</p>`;
+}
+
+function allSlips(){
+  const out=[];
+  for(const id in S.docs){if(!id.startsWith("d-"))continue;const k=id.slice(2),g=S.docs[id].grat||{};
+    (g.items||[]).forEach(t=>{if(t&&t.trim())out.push({t,k})});
+    if(g.note&&g.note.trim())out.push({t:(g.to?"Thank you, "+g.to+": ":"")+g.note,k});}
+  return out.sort((a,b)=>a.k<b.k?-1:1);
+}
+function jarHTML(slips){
+  let dots="";
+  slips.slice(-56).forEach((sl,i)=>{const row=Math.floor(i/7),col=i%7,j=((i*37)%9)-4,p=pal(sl.k);
+    dots+=`<span style="left:${8+col*25+(row%2)*11+j}px;top:${196-row*19+((i*13)%5)}px;background:${i%2?p.a:p.b}"></span>`});
+  return `<div class="jar" role="img" aria-label="Gratitude jar holding ${slips.length} slips"><div class="lid"></div><div class="neck"></div><div class="body">${dots}<div class="label">little joys</div></div></div>`;
+}
+const STARTERS=["A person…","A small moment…","My body…","Something I learned…","A place…","A comfort…"];
+function vGratitude(){
+  const k=S.view,id="d-"+k,d=peekDay(k)||newDay(),g=gformat(k);
+  const next=GFORMATS[(Math.floor(dayNum(k)/2)+1)%GFORMATS.length],nextDay=addDays(k,dayNum(k)%2?1:2);
+  const slips=allSlips();
+  let body="";
+  if(g.k==="jar"){
+    const items=(d.grat.items||[]).filter(Boolean);
+    body=`<h2>Today I'm grateful for…</h2>
+     <div class="chips">${STARTERS.map(s=>`<button class="chip" data-act="starter" data-v="${s}">${s}</button>`).join("")}</div>
+     <div class="addrow"><input class="pill" type="text" id="jar-new" placeholder="The way the light came through the window…" data-enter="jarAdd"><button class="btn" data-act="jarAdd">Drop it in</button></div>
+     ${items.length?`<ul class="list">${d.grat.items.map((t,i)=>t?`<li class="item"><span class="pdot"><i style="background:${i%2?"var(--a)":"var(--b)"}"></i></span><span class="t">${esc(t)}</span><button class="x" data-act="slipDel" data-v="${i}" aria-label="Remove">✕</button></li>`:"").join("")}</ul>`:`<p class="empty">your first little joy goes here</p>`}`;
+  }else if(g.k==="joys"){
+    body=`<h2>Three tiny joys</h2>`+JOYS.map((l,i)=>`<label style="display:flex;align-items:center;gap:10px"><span class="num">${i+1}</span>${line(id,"grat.items."+i,l+"…")}</label>`).join("");
+  }else if(g.k==="senses"){
+    body=`<h2>Five senses</h2>`+SENSES.map((l,i)=>`<label style="display:flex;flex-direction:column"><span class="small muted">${l}</span>${line(id,"grat.items."+i,"…")}</label>`).join("");
+  }else{
+    body=`<h2>A thank-you note</h2>${bind(id,"grat.to","Dear…","input",'class="line hand" style="font-size:1.7rem"')}${writeArea(id,"grat.note","Thank you for…",220)}`;
+  }
+  return `
+  <div class="head fade">
+    <div style="flex:1"><div class="eyebrow">Gratitude · ${fmt(k,{day:"numeric",month:"long"})}</div><h1>Thank you, life</h1>
+    <p class="lede">Today's style is <b>${g.t.toLowerCase()}</b>. ${g.how} It changes every two days. Next is ${next.t.toLowerCase()}, from ${fmt(nextDay,{weekday:"long"})}.</p></div>
+    <div style="flex:none">${sprig(false).replace('width="190" height="250"','width="110" height="140"')}</div>
+  </div>
+  <div class="grid wide">
+    <section class="box a" style="align-items:center">
+      <h2 style="align-self:flex-start">My joy jar</h2>
+      ${jarHTML(slips)}
+      <p class="hand" style="margin:0;text-align:center">${slips.length===1?"1 little joy collected":slips.length+" little joys collected"}</p>
+      <p class="small muted" style="margin:0;text-align:center">Everything you write on this page drops a pebble in the jar.</p>
+      ${slips.length?`<button class="btn sm" data-act="jarPull">Pull out a memory</button>`:""}
+      ${S.jarPick?`<div class="slip fade"><div class="hand">${esc(S.jarPick.t)}</div><div class="small muted">${fmt(S.jarPick.k,{day:"numeric",month:"long",year:"numeric"})}</div></div>`:""}
+    </section>
+    <section class="box">${body}</section>
+  </div>
+  <p class="footline">I have so much, and more is on its way.</p>`;
+}
+
+function claimedStreak(k){let n=0,c=k;const d0=peekDay(c);if(!(d0&&d0.man&&d0.man.claimed))c=addDays(c,-1);
+  while(true){const d=peekDay(c);if(d&&d.man&&d.man.claimed){n++;c=addDays(c,-1)}else break}return n}
+function vManifest(){
+  const k=S.view,id="d-"+k,d=peekDay(k)||newDay(),pr=practice(k),st=claimedStreak(k);
+  let extra="";
+  if(pr.k==="369"){const c=d.man.c369||0;let dots="";for(let i=0;i<18;i++){dots+=`<i class="${i<c?"on":""}"></i>`;if(i===2||i===8)dots+=`<i class="gap"></i>`}
+    extra=`<div class="box deep" style="padding:14px 16px"><div class="dots" aria-label="${c} of 18">${dots}</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm" data-act="c369">I said it</button><span class="small">${c} of 18 · 3 morning, 6 afternoon, 9 night</span>${c?`<button class="btn sm" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4)" data-act="c369reset">Reset</button>`:""}</div></div>`}
+  const STARS=`<g fill="#FBF8F1">${[[90,40,3],[160,70,2],[260,30,2.5],[330,80,2],[420,45,3],[470,100,2]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}"/>`).join("")}</g>`;
+  return `
+  ${banner("Manifestation · "+fmt(k,{day:"numeric",month:"long"}),"I am open<br>to receive",STARS)}
+  <section class="box deep">
+    <div class="eyebrow">Today's affirmation</div>
+    <div style="font-family:var(--serif);font-style:italic;font-size:clamp(1.5rem,4.5vw,2.1rem);line-height:1.25">${esc(pick(AFFIRM,k))}</div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" data-act="claim">${d.man.claimed?"✓ Claimed":"I claim it"}</button><span class="hand" style="font-size:1.4rem">${st?st+" day"+(st>1?"s":"")+" in a row":"read it out loud, then tap"}</span></div>
+  </section>
+  <section class="box b">
+    <div class="eyebrow">Today's practice · changes daily</div>
+    <h2 style="font-style:italic;font-size:1.6rem">${pr.t}</h2>
+    <p style="margin:0">${pr.how}</p>
+    ${pr.k==="369"?line(id,"man.text",pr.ph):writeArea(id,"man.text",pr.ph,280)}
+    ${extra}
+  </section>
+  <section class="box dash"><details><summary>How to make manifesting work for you</summary><ul>
+    <li><b>Be specific.</b> "A job I love" becomes "A remote content role that pays what I want."</li>
+    <li><b>Feel it now.</b> Spend one minute feeling how it is to already have it.</li>
+    <li><b>Act as if.</b> Take one small step a day that matches the life you want.</li>
+    <li><b>Let go of how.</b> Focus on what and why, and leave room for surprises.</li>
+    <li><b>Notice the signs.</b> Write down little wins. They build belief.</li>
+    <li><b>Be kind on slow days.</b> Missing a day undoes nothing. Just come back.</li></ul></details>
+    <button class="btn sm soft" data-act="tab" data-v="vision" style="align-self:flex-start">Open my vision board</button>
+  </section>
+  <p class="footline">What I appreciate, appreciates.</p>`;
+}
+
+function dayStats(k){
+  const d=peekDay(k),st=doc("settings"),ink=hasInk(inkKey("d-"+k,"journal"));
+  if(!d)return{todos:0,done:0,hab:0,habN:st.habits.length,words:0,wrote:ink,grat:0,mood:""};
+  const grat=(d.grat.items||[]).filter(x=>x&&x.trim()).length+(d.grat.note&&d.grat.note.trim()?1:0);
+  return{todos:d.todos.length,done:d.todos.filter(t=>t.done).length,hab:st.habits.filter(x=>d.habits&&d.habits[x.id]).length,habN:st.habits.length,words:words(d.journal),wrote:ink||words(d.journal)>0,grat,mood:d.mood};
+}
+const inRange=(date,a,b)=>date&&date>=a&&date<=b;
+function vWeek(){
+  const ws=weekStart(S.view),days=[...Array(7)].map((_,i)=>addDays(ws,i)),we=days[6],st=doc("settings"),ss=days.map(dayStats);
+  const sum=f=>ss.reduce((a,s)=>a+f(s),0);
+  const habPct=Math.round(100*sum(s=>s.hab)/Math.max(1,st.habits.length*Math.max(1,days.filter(k=>k<=todayKey()).length)));
+  const yt=doc("yt").videos.filter(v=>inRange(v.posted,ws,we)).length;
+  const apps=doc("jobs").apps.filter(a=>inRange(a.date,ws,we)&&a.status!=="Saved").length;
+  const tops=[];days.forEach(k=>{const d=peekDay(k);if(d)(d.top3||[]).forEach(t=>{if(t&&t.trim())tops.push([k,t])})});
+  return `
+  <div class="head fade">${archScene()}<div><div class="eyebrow">Weekly · fills itself in</div><h1>Week of<br>${fmt(ws,{day:"numeric",month:"long"})}</h1><p class="lede">Everything here comes from your daily pages, YouTube and job search. Nothing to rewrite.</p></div></div>
+  <div class="stats">
+    <div class="stat"><b>${sum(s=>s.done)}</b><span>to-dos done</span></div>
+    <div class="stat"><b>${habPct}%</b><span>habits kept</span></div>
+    <div class="stat"><b>${ss.filter(s=>s.wrote).length}/7</b><span>journal days</span></div>
+    <div class="stat"><b>${sum(s=>s.grat)}</b><span>gratitude slips</span></div>
+    <div class="stat"><b>${yt}</b><span>videos posted</span></div>
+    <div class="stat"><b>${apps}</b><span>job applications</span></div>
+  </div>
+  <section class="box"><h2>Day by day</h2><div class="scroll"><table>
+    <thead><tr><th class="l">Day</th><th>To-dos</th><th>Habits</th><th>Journal</th><th>Grateful</th><th class="l">Mood</th></tr></thead>
+    <tbody>${days.map((k,i)=>{const s=ss[i],p=pal(k);return `<tr><td class="l"><button class="linkbtn" data-act="go" data-v="${k}"><span class="pdot"><i style="background:${p.a}"></i><i style="background:${p.b}"></i></span>${fmt(k,{weekday:"short",day:"numeric"})}</button></td>
+      <td>${s.todos?s.done+"/"+s.todos:"·"}</td><td><div class="bar"><i style="width:${Math.round(100*s.hab/Math.max(1,s.habN))}%"></i></div></td><td>${s.words?s.words+" w":s.wrote?"✎":"·"}</td><td>${s.grat||"·"}</td><td class="l">${esc(s.mood)||"·"}</td></tr>`}).join("")}</tbody></table></div></section>
+  <section class="box a"><div class="boxhead"><h2>Habit tracker</h2><span class="small muted">ticks from your daily pages</span></div>${habitGrid(days,k=>`<th>${fmt(k,{weekday:"narrow"})}<br>${fmt(k,{day:"numeric"})}</th>`)}</section>
+  <section class="box dash"><h2>This week's top priorities</h2>${tops.length?`<ul class="list">${tops.map(([k,t])=>`<li class="item"><span class="tag">${fmt(k,{weekday:"short"})}</span><span class="t">${esc(t)}</span></li>`).join("")}</ul>`:`<p class="empty">your Top 3 from each day collect here</p>`}</section>
+  <p class="footline">Look how much you did this week.</p>`;
+}
+function vMonth(){
+  const v=parse(S.view),y=v.getFullYear(),m=v.getMonth(),first=new Date(y,m,1),n=new Date(y,m+1,0).getDate(),st=doc("settings");
+  const lead=(first.getDay()+6)%7,t=todayKey(),keys=[...Array(n)].map((_,i)=>dkey(new Date(y,m,i+1)));
+  const ss=keys.map(dayStats),past=Math.max(1,keys.filter(k=>k<=t).length),sum=f=>ss.reduce((a,s)=>a+f(s),0);
+  const yt=doc("yt").videos.filter(x=>inRange(x.posted,keys[0],keys[n-1])).length;
+  const apps=doc("jobs").apps.filter(a=>inRange(a.date,keys[0],keys[n-1])&&a.status!=="Saved").length;
+  let cells=["M","T","W","T","F","S","S"].map(x=>`<div class="dow">${x}</div>`).join("")+"<div></div>".repeat(lead);
+  keys.forEach((k,i)=>{const s=ss[i],p=pal(k),pct=Math.round(100*s.hab/Math.max(1,s.habN));
+    cells+=`<button data-act="go" data-v="${k}" class="${k===t?"today":""} ${k>t?"fut":""}" style="background:linear-gradient(135deg,${p.a},${p.b})" aria-label="${fmt(k,{day:"numeric",month:"long"})}"><span class="fill" style="height:${pct}%"></span><b>${i+1}</b><span>${s.wrote?"✎":""}${s.grat?" ♡":""}</span></button>`});
+  return `
+  <div class="head fade">${archScene("mtn")}<div><div class="eyebrow">Monthly · fills itself in</div><h1>${first.toLocaleDateString(undefined,{month:"long"})}<br>${y}</h1>
+   <p class="lede">Every square wears that day's colours. The shading rises with the habits you kept. ✎ means you journaled, ♡ means you wrote gratitude.</p></div></div>
+  <section class="box"><div class="cal">${cells}</div></section>
+  <div class="stats">
+    <div class="stat"><b>${sum(s=>s.done)}</b><span>to-dos done</span></div>
+    <div class="stat"><b>${ss.filter(s=>s.wrote).length}</b><span>journal days</span></div>
+    <div class="stat"><b>${sum(s=>s.grat)}</b><span>gratitude slips</span></div>
+    <div class="stat"><b>${yt}</b><span>videos posted</span></div>
+    <div class="stat"><b>${apps}</b><span>applications</span></div>
+  </div>
+  <section class="box"><div class="boxhead"><h2>Habit boxes</h2><span class="small muted">colour in when you tick them on your daily page</span></div>${habitGrid(keys,k=>`<th>${Number(k.slice(8))}</th>`)}</section>
+  <section class="box a"><h2>Habits this month</h2>
+   ${st.habits.map(h=>{const c=keys.filter(k=>{const d=peekDay(k);return d&&d.habits&&d.habits[h.id]}).length;return `<div style="display:flex;flex-direction:column;gap:5px"><div class="boxhead small"><span>${esc(h.name)}</span><span class="muted">${c} of ${past} days</span></div><div class="bar"><i style="width:${Math.min(100,Math.round(100*c/past))}%"></i></div></div>`}).join("")}
+  </section>
+  <p class="footline">A month of soft, steady days.</p>`;
+}
+
+const AREA_ICONS={me:"M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z",body:"M12 21s-7.5-4.6-9.5-9.2C1 8.3 3.2 5 6.6 5c2 0 3.6 1.1 4.4 2.6h2C13.8 6.1 15.4 5 17.4 5c3.4 0 5.6 3.3 4.1 6.8C19.5 16.4 12 21 12 21z",love:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M3 20c0-3 3-5 6-5s6 2 6 5 M17 11a3 3 0 1 0 0-6 M21 20c0-2.5-2-4.3-4-4.8",home:"M3 11l9-7 9 7v9H3z M9 20v-6h6v6",work:"M3 7h18v13H3z M8 7V4h8v3 M3 13h18",create:"M12 3a9 9 0 0 0 0 18c1.5 0 2-1 2-2s-1-1.5-1-2.5 1-1.5 2-1.5h2a4 4 0 0 0 4-4c0-4.5-4-8-9-8z",fun:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M3 12h18 M12 3c3 3 3 15 0 18 M12 3c-3 3-3 15 0 18"};
+function sunrise(p){
+  const pl=pal(S.view),w=800,h=230,sy=h*.95-p*(h*.13),sun=mix(pl.b,"#F29A5C",.45);
+  return `<div class="banner"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sunrise, ${p} of 5 steps done">
+   <rect width="${w}" height="${h}" fill="${p>=3?mix(pl.a,"#fff",.5):mix(pl.a,"#5b5873",.35)}"/>
+   <circle cx="400" cy="${sy}" r="${70+p*6}" fill="${mix(pl.b,"#fff",.3)}" opacity=".7"/>
+   <circle cx="400" cy="${sy}" r="46" fill="${sun}"/>
+   <path d="M0 ${h*.7} C 200 ${h*.58} 330 ${h*.7} 480 ${h*.68} S 700 ${h*.6} 800 ${h*.66} V${h} H0 Z" fill="${mix(pl.a,pl.ink,.2)}"/>
+   <path d="M0 ${h*.84} C 260 ${h*.74} 520 ${h*.9} 800 ${h*.8} V${h} H0 Z" fill="${mix(pl.ink,"#fff",.2)}"/>
+   </svg><div class="over"><div class="eyebrow" style="color:${p>=3?pl.ink:"#FBF8F1"}">${p===5?"Your sun is up":p+" of 5 steps · the sun rises as you go"}</div></div></div>`;
+}
+function vVision(){
+  const v=doc("vision");
+  const sub=`<nav class="subnav" aria-label="Vision board pages"><button class="${S.vtab==="figure"?"on":""}" data-act="vtab" data-v="figure">I · Dream it</button><button class="${S.vtab==="journal"?"on":""}" data-act="vtab" data-v="journal">II · Watch the sun rise</button></nav>`;
+  if(S.vtab==="figure"){
+    return `${sub}
+    <div class="head fade">${archScene("mtn")}<div><div class="eyebrow">Vision board · part one</div><h1>Dream without<br>limits</h1><p class="lede">Before you choose a single picture, get clear on what you truly want. Write how you want to feel first, then what you want.</p></div></div>
+    <section class="box deep"><div class="eyebrow">My word for this year</div>${bind("vision","word","Bloom","input",'class="line" style="font-family:var(--serif);font-style:italic;font-weight:300;font-size:2.4rem"')}<p class="small" style="margin:0;opacity:.8">One word to guide every choice.</p></section>
+    <div class="grid">${AREAS.map((a,i)=>`<section class="box"><div style="display:flex;align-items:center;gap:12px"><span class="areaicon" style="background:${i%2?"var(--tintB)":"var(--tintA)"}"><svg viewBox="0 0 24 24" fill="none" stroke="var(--deep)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${AREA_ICONS[a.k]}"/></svg></span><h2>${a.t}</h2></div>
+      <span class="small muted">${a.q}</span>${line("vision","areas."+a.k+".feel","I want to feel…")}${lined("vision","areas."+a.k+".want","What I want here…",96)}</section>`).join("")}</div>
+    <button class="btn" data-act="vtab" data-v="journal" style="align-self:center">Next: watch the sun rise</button>
+    <p class="footline">I am allowed to want big, beautiful things.</p>`;
+  }
+  const done=[v.top.some(x=>x&&x.trim()),v.tiles.length>0,((v.feel||"").trim().length>30||hasInk(inkKey("vision","feel"))),v.believe.some(x=>x&&x.trim()),v.steps.some(s=>s.done)];
+  const p=done.filter(Boolean).length,n=i=>`<div class="n ${done[i]?"ok":""}">${done[i]?"✓":["I","II","III","IV","V"][i]}</div>`;
+  const label=i=>(v.top[i]||"").trim()||"Dream "+(i+1);
+  return `${sub}
+  <div class="fade">${sunrise(p)}</div>
+  <section class="box step">${n(0)}<div class="body"><h2>Dream it</h2><span class="small muted">Look back at part one. Pick the three dreams that make your heart jump.</span>${[0,1,2].map(i=>line("vision","top."+i,["My biggest dream","Second dream","Third dream"][i])).join("")}</div></section>
+  <section class="box a step">${n(1)}<div class="body"><h2>See it</h2><span class="small muted">Build your board with words and photos that look and feel like your dreams.</span>
+    <div class="board">${v.tiles.map((t,i)=>{const p2=PALETTES[(i*3)%14];return `<div class="tile" style="background:${i%2?p2.a:p2.b}">${t.img?`<img src="${esc(t.img)}" alt="">`:esc(t.text)}<button class="x" data-act="tileDel" data-v="${i}" aria-label="Remove">${S.confirm==="tile"+i?"Remove?":"✕"}</button></div>`}).join("")}</div>
+    <div class="addrow"><input class="pill" type="text" id="tile-word" placeholder="A word or quote" data-enter="tileWord"><button class="btn" data-act="tileWord">Add</button></div>
+    <label class="btn sm soft" style="align-self:flex-start;display:inline-flex;align-items:center;cursor:pointer">Add a photo<input type="file" accept="image/*" id="tile-photo" hidden></label>
+  </div></section>
+  <section class="box step">${n(2)}<div class="body"><h2>Feel it</h2><span class="small muted">Describe one day when all three dreams are real. Present tense, lots of detail.</span>${writeArea("vision","feel","I wake up and…",280)}</div></section>
+  <section class="box b step">${n(3)}<div class="body"><h2>Believe it</h2><span class="small muted">Turn each dream into an "I am" or "I have" sentence. Read them every morning.</span>${[0,1,2].map(i=>`<label style="display:flex;flex-direction:column"><span class="small muted">${esc(label(i))}</span>${line("vision","believe."+i,"I am… / I have…")}</label>`).join("")}</div></section>
+  <section class="box step">${n(4)}<div class="body"><h2>Begin</h2><span class="small muted">One tiny first step for each dream. Tick it when it's done.</span>
+    ${[0,1,2].map(i=>`<div class="item ${v.steps[i].done?"done":""}">${tick(v.steps[i].done,"stepTick",i)}<div class="t">${line("vision","steps."+i+".t","First step for "+label(i))}</div></div>`).join("")}
+  </div></section>
+  <p class="footline">The sun always comes up. So do you.</p>`;
+}
+
+function vYT(){
+  const y=doc("yt"),st=doc("settings"),ws=weekStart(S.view),we=addDays(ws,6);
+  const posted=y.videos.filter(v=>inRange(v.posted,ws,we)).length;
+  const active=y.videos.filter(v=>v.stage!=="Posted"),done=y.videos.filter(v=>v.stage==="Posted").sort((a,b)=>a.posted<b.posted?1:-1);
+  const card=v=>{const si=STAGES.indexOf(v.stage),ck=v.checks||{},c=st.ytList.filter((_,i)=>ck[i]).length,open=S.edit["v"+v.id];
+    return `<div class="vid">
+      <div style="display:flex;gap:8px;align-items:center"><input class="line" type="text" id="vt-${v.id}" value="${esc(v.title)}" data-vid="${v.id}" style="font-weight:700;font-size:1rem" placeholder="Video title"><button class="x" data-act="vidDel" data-v="${v.id}">${S.confirm==="v"+v.id?"Delete?":"✕"}</button></div>
+      <div class="stages">${STAGES.map((s,i)=>`<button class="${i===si?"on":i<si?"past":""}" data-act="stage" data-v="${v.id}" data-s="${s}">${s}</button>`).join("")}</div>
+      <button class="btn sm line2" data-act="edit" data-v="v${v.id}" style="align-self:flex-start">${open?"Hide checklist":"Posting checklist"} · ${c}/${st.ytList.length}</button>
+      ${open?`<ul class="list">${st.ytList.map((t,i)=>`<li class="item ${ck[i]?"done":""}">${tick(ck[i],"ytCheck",v.id,`data-i="${i}"`)}<span class="t">${esc(t)}</span></li>`).join("")}</ul>`:""}
+    </div>`};
+  const PLAY=`<g transform="translate(640 120)"><rect x="0" y="0" width="96" height="66" rx="18" fill="#FBF8F1" stroke="#3a3440" stroke-width="2.5"/><path d="M38 20 L62 33 L38 46 Z" fill="${pal(S.view).ink}"/></g>`;
+  return `
+  ${banner("YouTube · week of "+fmt(ws,{day:"numeric",month:"short"}),`${posted} of ${st.ytGoal} posted<br>this week`,PLAY)}
+  <div class="grid wide">
+    <section class="box deep"><div class="eyebrow">Weekly goal</div>
+      <div style="display:flex;align-items:center;gap:14px"><button class="btn sm" data-act="goal" data-v="ytGoal" data-d="-1" aria-label="Lower goal">−</button><span style="font-family:var(--serif);font-style:italic;font-size:2.4rem;line-height:1">${st.ytGoal}</span><button class="btn sm" data-act="goal" data-v="ytGoal" data-d="1" aria-label="Raise goal">+</button><span class="small">video${st.ytGoal>1?"s":""} a week</span></div>
+      <p class="small" style="margin:0;opacity:.8">Mark a video Posted and it's logged here, in your week and in your month.</p></section>
+    <section class="box b"><h2>Idea dump</h2>
+      <div class="addrow"><input class="pill" type="text" id="idea-new" placeholder="Quick idea…" data-enter="ideaAdd"><button class="btn" data-act="ideaAdd">Save</button></div>
+      <ul class="list">${y.ideas.map((x,i)=>`<li class="item"><span class="t">${esc(x.t)}</span><button class="btn sm" data-act="ideaGo" data-v="${i}">Make it</button><button class="x" data-act="ideaDel" data-v="${i}" aria-label="Remove">✕</button></li>`).join("")||`<li class="empty">every idea, even the silly ones</li>`}</ul>
+    </section>
+  </div>
+  <section class="box"><div class="boxhead"><h2>In progress</h2><span class="small muted">Tap a stage to move it along</span></div>
+    <div class="addrow"><input class="pill" type="text" id="yt-new" placeholder="New video title" data-enter="vidAdd"><button class="btn" data-act="vidAdd">Add video</button></div>
+    ${active.map(card).join("")||`<p class="empty">no videos in progress yet</p>`}
+  </section>
+  <section class="box a"><h2>Posting log</h2><span class="small muted">Fills itself in when a video is marked Posted.</span>
+    ${done.length?`<ul class="list">${done.map(v=>`<li class="item"><span class="tag">${fmt(v.posted,{day:"numeric",month:"short"})}</span><span class="t">${esc(v.title||"Untitled")}</span><button class="x" data-act="stage" data-v="${v.id}" data-s="Ready" aria-label="Move back to Ready">↺</button></li>`).join("")}</ul>`:`<p class="empty">nothing posted yet</p>`}
+  </section>
+  <section class="box dash"><details><summary>Change the posting checklist</summary><p class="small muted">One item per line. Every video uses this list.</p><textarea class="lined" id="yt-list" data-list="ytList" style="min-height:220px">${esc(st.ytList.join("\n"))}</textarea></details></section>
+  <p class="footline">My channel grows because I show up as myself.</p>`;
+}
+
+function vJobs(){
+  const j=doc("jobs"),st=doc("settings"),ws=weekStart(S.view),we=addDays(ws,6),wk=j.weeks[ws]||{checks:{}};
+  const thisWeek=j.apps.filter(a=>inRange(a.date,ws,we)&&a.status!=="Saved").length,pct=Math.min(100,Math.round(100*thisWeek/Math.max(1,st.jobGoal)));
+  const apps=j.apps.map((a,i)=>[a,i]).sort((x,y)=>x[0].date<y[0].date?1:-1);
+  const interviews=j.apps.filter(a=>a.status==="Interview"||a.status==="Offer").length;
+  return `
+  <div class="head fade">${archScene()}<div><div class="eyebrow">Job search · week of ${fmt(ws,{day:"numeric",month:"short"})}</div><h1>${thisWeek} of ${st.jobGoal}<br>applications</h1><p class="lede">The right job is looking for you too. ${j.apps.length} tracked so far, ${interviews} interview${interviews===1?"":"s"}.</p></div></div>
+  <div class="grid wide">
+    <section class="box deep"><div class="eyebrow">This week's goal</div>
+      <div class="bar" style="height:12px;background:rgba(255,255,255,.18)"><i style="width:${pct}%;background:var(--b)"></i></div>
+      <div style="display:flex;align-items:center;gap:14px"><button class="btn sm" data-act="goal" data-v="jobGoal" data-d="-1" aria-label="Lower goal">−</button><span style="font-family:var(--serif);font-style:italic;font-size:2.4rem;line-height:1">${st.jobGoal}</span><button class="btn sm" data-act="goal" data-v="jobGoal" data-d="1" aria-label="Raise goal">+</button><span class="small">a week</span></div></section>
+    <section class="box a"><div class="boxhead"><h2>Weekly checklist</h2><span class="small muted">fresh every Monday</span></div>
+      <ul class="list">${st.jobList.map((t,i)=>`<li class="item ${wk.checks[i]?"done":""}">${tick(wk.checks[i],"jobCheck",i)}<span class="t">${esc(t.replace("my applications goal","my goal of "+st.jobGoal+" applications"))}</span></li>`).join("")}</ul></section>
+  </div>
+  <section class="box"><h2>Applications</h2>
+    <div class="grid"><input class="line" type="text" id="app-co" placeholder="Company"><input class="line" type="text" id="app-role" placeholder="Role" data-enter="appAdd"></div>
+    <button class="btn" data-act="appAdd" style="align-self:flex-start">Add application</button>
+    ${apps.length?apps.map(([a,i])=>`<div class="app-row"><div class="who"><b>${esc(a.co)}</b> <span class="muted">${esc(a.role)}</span><div class="small muted">${fmt(a.date,{day:"numeric",month:"short"})}</div></div>
+      <select id="as-${a.id}" data-doc="jobs" data-path="apps.${i}.status" aria-label="Status">${STATUSES.map(s=>`<option ${a.status===s?"selected":""}>${s}</option>`).join("")}</select>
+      <button class="x" data-act="appDel" data-v="${a.id}">${S.confirm==="a"+a.id?"Delete?":"✕"}</button></div>`).join(""):`<p class="empty">every application you send shows up here</p>`}
+  </section>
+  <section class="box dash"><details><summary>Change the weekly checklist</summary><p class="small muted">One item per line.</p><textarea class="lined" id="job-list" data-list="jobList" style="min-height:190px">${esc(st.jobList.join("\n"))}</textarea></details></section>
+  <p class="footline">Dedication always pays off.</p>`;
+}
+
+function vDump(){
+  const d=doc("dump");
+  return `
+  <div class="head fade">${archScene()}<div><div class="eyebrow">Brain dump</div><h1>Empty your<br>head here</h1><p class="lede">One thought at a time. Send anything to today's to-do list with one tap.</p></div></div>
+  <section class="box">
+    <div class="addrow"><input class="pill" type="text" id="dump-new" placeholder="What's on your mind?" data-enter="dumpAdd"><button class="btn" data-act="dumpAdd">Add</button></div>
+    <ul class="list">${d.items.map((x,i)=>`<li class="item ${x.moved?"done":""}"><span class="t">${esc(x.t)}</span>${x.moved?`<span class="tag">on ${fmt(x.moved,{day:"numeric",month:"short"})}</span>`:`<button class="btn sm soft" data-act="dumpGo" data-v="${i}">To today</button>`}<button class="x" data-act="dumpDel" data-v="${i}" aria-label="Remove">✕</button></li>`).join("")||`<li class="empty">nothing here, and that feels nice too</li>`}</ul>
+    ${d.items.some(x=>x.moved)?`<button class="btn sm line2" data-act="dumpClear" style="align-self:flex-start">Clear the ones I moved</button>`:""}
+  </section>
+  <section class="box b"><h2>Messy notes</h2>${writeArea("dump","notes","Free space. No rules.",340)}</section>
+  <p class="footline">A clear head makes room for good things.</p>`;
+}
+
+/* ---------- actions ---------- */
+function val(id){const el=document.getElementById(id);const v=el?el.value.trim():"";if(el)el.value="";return v}
+const A={
+ tab:v=>{S.tab=v;S.jarPick=null;lsSave();render();window.scrollTo({top:0})},
+ prev:()=>{S.view=addDays(S.view,-1);render()},
+ next:()=>{S.view=addDays(S.view,1);render()},
+ today:()=>{S.view=todayKey();render()},
+ go:v=>{S.view=v;S.tab=S.tab==="journal"?"journal":"today";render();window.scrollTo({top:0})},
+ shift:()=>{S.shift[S.view]=(S.shift[S.view]||0)+1;render()},
+ todoAdd:()=>{const t=val("todo-new");if(!t)return;const id="d-"+S.view;doc(id).todos.push({t,done:false});save(id);render();document.getElementById("todo-new")?.focus()},
+ todo:v=>{const id="d-"+S.view,d=doc(id);d.todos[v].done=!d.todos[v].done;save(id);render()},
+ todoDel:v=>{const id="d-"+S.view;doc(id).todos.splice(v,1);save(id);render()},
+ habit:v=>{const id="d-"+S.view,d=doc(id);d.habits[v]=!d.habits[v];save(id);render()},
+ edit:v=>{S.edit[v]=!S.edit[v];render()},
+ habitAdd:()=>{const t=val("habit-new");if(!t)return;doc("settings").habits.push({id:"h"+rid(),name:t});save("settings");render();document.getElementById("habit-new")?.focus()},
+ habitDel:v=>{const s=doc("settings");s.habits=s.habits.filter(h=>h.id!==v);save("settings");render()},
+ mood:v=>{const id="d-"+S.view,d=doc(id);d.mood=d.mood===v?"":v;save(id);render()},
+ jarAdd:()=>{const t=val("jar-new");if(!t)return;const id="d-"+S.view;doc(id).grat.items.push(t);save(id);render();document.getElementById("jar-new")?.focus()},
+ slipDel:v=>{const id="d-"+S.view;doc(id).grat.items.splice(v,1);save(id);render()},
+ jarPull:()=>{const s=allSlips();if(!s.length)return;let p;do{p=s[Math.floor(Math.random()*s.length)]}while(s.length>1&&S.jarPick&&p.t===S.jarPick.t);S.jarPick=p;render()},
+ claim:()=>{const id="d-"+S.view,d=doc(id);d.man.claimed=!d.man.claimed;save(id);render()},
+ c369:()=>{const id="d-"+S.view,d=doc(id);d.man.c369=Math.min(18,(d.man.c369||0)+1);save(id);render()},
+ c369reset:()=>{const id="d-"+S.view;doc(id).man.c369=0;save(id);render()},
+ vtab:v=>{S.vtab=v;render();window.scrollTo({top:0})},
+ tileWord:()=>{const t=val("tile-word");if(!t)return;doc("vision").tiles.push({text:t});save("vision");render()},
+ tileDel:v=>{if(S.confirm!=="tile"+v){S.confirm="tile"+v;render();return}S.confirm=null;doc("vision").tiles.splice(v,1);save("vision");render()},
+ stepTick:v=>{const s=doc("vision").steps[v];s.done=!s.done;save("vision");render()},
+ vidAdd:()=>{const t=val("yt-new");if(!t)return;doc("yt").videos.push({id:rid(),title:t,stage:"Idea",checks:{},posted:""});save("yt");render()},
+ vidDel:v=>{if(S.confirm!=="v"+v){S.confirm="v"+v;render();return}S.confirm=null;const y=doc("yt");y.videos=y.videos.filter(x=>x.id!==v);save("yt");render()},
+ stage:(v,el)=>{const x=doc("yt").videos.find(z=>z.id===v);x.stage=el.dataset.s;x.posted=x.stage==="Posted"?(x.posted||S.view):"";save("yt");render()},
+ ytCheck:(v,el)=>{const x=doc("yt").videos.find(z=>z.id===v);x.checks=x.checks||{};const i=el.dataset.i;x.checks[i]=!x.checks[i];save("yt");render()},
+ ideaAdd:()=>{const t=val("idea-new");if(!t)return;doc("yt").ideas.unshift({t});save("yt");render();document.getElementById("idea-new")?.focus()},
+ ideaGo:v=>{const y=doc("yt"),[i]=y.ideas.splice(v,1);y.videos.push({id:rid(),title:i.t,stage:"Idea",checks:{},posted:""});save("yt");render()},
+ ideaDel:v=>{doc("yt").ideas.splice(v,1);save("yt");render()},
+ goal:(v,el)=>{const s=doc("settings");s[v]=Math.max(1,(s[v]||1)+Number(el.dataset.d));save("settings");render()},
+ jobCheck:v=>{const j=doc("jobs"),ws=weekStart(S.view);j.weeks[ws]=j.weeks[ws]||{checks:{}};j.weeks[ws].checks[v]=!j.weeks[ws].checks[v];save("jobs");render()},
+ appAdd:()=>{const co=val("app-co"),role=val("app-role");if(!co&&!role)return;doc("jobs").apps.push({id:rid(),co:co||"Company",role,date:S.view,status:"Applied"});save("jobs");render()},
+ appDel:v=>{if(S.confirm!=="a"+v){S.confirm="a"+v;render();return}S.confirm=null;const j=doc("jobs");j.apps=j.apps.filter(a=>a.id!==v);save("jobs");render()},
+ dumpAdd:()=>{const t=val("dump-new");if(!t)return;doc("dump").items.unshift({t});save("dump");render();document.getElementById("dump-new")?.focus()},
+ dumpGo:v=>{const d=doc("dump"),x=d.items[v],id="d-"+S.view;doc(id).todos.push({t:x.t,done:false});x.moved=S.view;save(id);save("dump");render()},
+ dumpDel:v=>{doc("dump").items.splice(v,1);save("dump");render()},
+ starter:v=>{const el=document.getElementById("jar-new");if(el){el.value=v.replace("…",": ");el.focus()}},
+ dumpClear:()=>{const d=doc("dump");d.items=d.items.filter(x=>!x.moved);save("dump");render()}
+};
+document.addEventListener("click",e=>{
+  const el=e.target.closest("[data-act]");if(!el)return;
+  const a=el.dataset.act;if(S.confirm&&!["tileDel","vidDel","appDel"].includes(a))S.confirm=null;
+  A[a]&&A[a](el.dataset.v,el);
+});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Enter"||e.isComposing)return;const el=e.target.closest("[data-enter]");if(!el)return;e.preventDefault();A[el.dataset.enter]();
+});
+document.addEventListener("input",e=>{
+  const el=e.target;
+  if(el.dataset.doc){const d=doc(el.dataset.doc);setPath(d,el.dataset.path,el.value);save(el.dataset.doc);
+    if(el.dataset.path==="journal"){const w=$("#wc");if(w)w.textContent=words(el.value)+" words"}}
+  else if(el.dataset.vid){const x=doc("yt").videos.find(z=>z.id===el.dataset.vid);if(x){x.title=el.value;save("yt")}}
+  else if(el.dataset.list){const s=doc("settings");s[el.dataset.list]=el.value.split("\n").map(x=>x.trim()).filter(Boolean);save("settings")}
+});
+document.addEventListener("change",async e=>{
+  const el=e.target;
+  if(el.tagName==="SELECT"&&el.dataset.doc){setPath(doc(el.dataset.doc),el.dataset.path,el.value);save(el.dataset.doc);render()}
+  if(el.id==="tile-photo"&&el.files&&el.files[0]){
+    try{const blob=await shrink(el.files[0]);let src=null;
+      if(S.assets){try{const r=await S.assets.upload(blob);src=r.url}catch(err){}}
+      if(!src)src=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(blob)});
+      doc("vision").tiles.push({img:src});save("vision");render();
+    }catch(err){}
+  }
+});
+function shrink(file){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const m=480,s=Math.min(1,m/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>b?res(b):rej(),"image/jpeg",.72)};img.onerror=rej;img.src=u})}
+
+/* new day while the app stays open */
+let lastDay=todayKey();
+setInterval(()=>{const t=todayKey();if(t!==lastDay){if(S.view===lastDay)S.view=t;lastDay=t;if(!/TEXTAREA|INPUT/.test(document.activeElement?.tagName||""))render()}},60000);
+
+/* ---------- Apple Pencil handwriting ---------- */
+const PREFK="pastel-days-prefs";
+try{const o=JSON.parse(localStorage.getItem(PREFK)||"{}");S.modes=o.modes||{};S.ink=o.ink||{}}catch(e){S.modes={};S.ink={}}
+S.ink=Object.assign({color:0,size:1,tool:"pen"},S.ink);S.inkHist={};S.penSeen=false;
+const savePrefs=()=>{try{localStorage.setItem(PREFK,JSON.stringify({modes:S.modes,ink:S.ink}))}catch(e){}};
+const inkKey=(docId,path)=>"ink-"+docId+"-"+path.replace(/\./g,"_");
+const hasInk=key=>{const d=S.docs[key];return!!(d&&d.strokes&&d.strokes.length)};
+const SIZES=[["Fine",1.4],["Medium",2.4],["Bold",4]];
+function inkColors(){const p=pal(S.view);return[["Pen","#2E2A33"],["Day colour",p.ink],["Deep",mix(p.ink,"#1d1a22",.45)],["Rose","#C0587A"],["Highlighter",p.b]]}
+
+/* a writing area that can be typed into or handwritten on */
+function writeArea(docId,path,ph,minH,cls){
+  cls=cls||"lined";
+  const key=inkKey(docId,path),m=S.modes[path]||"type",d=S.docs[docId],txt=d?getPath(d,path):"";
+  const sw=`<div class="modesw" role="group" aria-label="How do you want to write?"><button class="${m==="type"?"on":""}" data-act="mode" data-v="${path}" data-m="type" aria-pressed="${m==="type"}">Type</button><button class="${m==="pen"?"on":""}" data-act="mode" data-v="${path}" data-m="pen" aria-pressed="${m==="pen"}">✎ Apple Pencil</button></div>`;
+  if(m==="type")return sw+bind(docId,path,ph,"textarea",`class="${cls}" style="min-height:${minH}px"`)+(hasInk(key)?`<p class="small muted" style="margin:0">You also have a handwritten page here. Tap Apple Pencil to see it.</p>`:"");
+  const cols=inkColors(),t=S.ink;
+  const bar=`<div class="inkbar" role="toolbar" aria-label="Pencil tools">
+    ${cols.map(([n,c],i)=>`<button class="sw ${t.tool!=="eraser"&&t.color===i?"on":""}" style="background:${c}" data-act="inkColor" data-v="${i}" aria-label="${n}" title="${n}"></button>`).join("")}
+    <span class="sep"></span>
+    ${SIZES.map(([n,s],i)=>`<button class="size ${t.size===i?"on":""}" data-act="inkSize" data-v="${i}" aria-label="${n}" title="${n}"><i style="width:${4+i*4}px;height:${4+i*4}px"></i></button>`).join("")}
+    <span class="sep"></span>
+    <button class="tool ${t.tool==="eraser"?"on":""}" data-act="inkEraser">Eraser</button>
+    <button class="tool" data-act="inkUndo" data-v="${key}">Undo</button>
+    <button class="tool" data-act="inkClear" data-v="${key}">${S.confirm==="clear"+key?"Clear page?":"Clear"}</button>
+  </div>`;
+  return sw+bar+`<div class="inkpad" data-ink="${key}" data-minh="${minH}"><canvas aria-label="Handwriting area"></canvas></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="small muted">Write with your Apple Pencil. Your finger scrolls the page.</span><button class="btn sm line2" data-act="inkMore" data-v="${key}">More paper</button></div>`
+    +(txt?`<p class="small muted" style="margin:0">Your typed words are kept too. Tap Type to see them.</p>`:"");
+}
+
+function inkDoc(key,minH,w){
+  if(!S.docs[key])S.docs[key]={h:Math.max(.6,minH/Math.max(w,300)),strokes:[]};
+  return S.docs[key];
+}
+function strokeWidth(st,w,p){return st.s*(w/700)*(st.hl?5:(.45+.9*p))}
+function drawStroke(ctx,st,w){
+  const a=st.pts;if(!a||a.length<3)return;
+  const X=i=>a[i]*w/1000,Y=i=>a[i+1]*w/1000;
+  ctx.save();ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle=st.c;
+  if(st.hl){ctx.globalAlpha=.45;ctx.globalCompositeOperation="multiply";ctx.lineWidth=strokeWidth(st,w,.5);ctx.beginPath();ctx.moveTo(X(0),Y(0));
+    for(let i=3;i<a.length;i+=3)ctx.lineTo(X(i),Y(i));if(a.length===3)ctx.lineTo(X(0)+.1,Y(0));ctx.stroke();ctx.restore();return}
+  if(a.length===3){ctx.fillStyle=st.c;ctx.beginPath();ctx.arc(X(0),Y(0),strokeWidth(st,w,a[2]/100)/2,0,7);ctx.fill();ctx.restore();return}
+  for(let i=3;i<a.length;i+=3){
+    ctx.lineWidth=strokeWidth(st,w,a[i+2]/100);ctx.beginPath();
+    const px=X(i-3),py=Y(i-3),cx=X(i),cy=Y(i);
+    if(i>=6){const mx=(X(i-6)+px)/2,my=(Y(i-6)+py)/2;ctx.moveTo(mx,my);ctx.quadraticCurveTo(px,py,(px+cx)/2,(py+cy)/2)}else{ctx.moveTo(px,py);ctx.lineTo((px+cx)/2,(py+cy)/2)}
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+class Pad{
+  constructor(el){
+    this.el=el;el._pad=this;this.key=el.dataset.ink;this.minH=Number(el.dataset.minh)||400;
+    this.cv=el.querySelector("canvas");this.ctx=this.cv.getContext("2d");this.fit();
+    const cv=this.cv;
+    cv.addEventListener("pointerdown",e=>this.down(e));
+    cv.addEventListener("pointermove",e=>this.move(e));
+    ["pointerup","pointercancel","pointerleave"].forEach(n=>cv.addEventListener(n,e=>this.up(e)));
+    cv.addEventListener("touchstart",e=>{if(!S.penSeen||[...e.touches].some(t=>t.touchType==="stylus"))e.preventDefault()},{passive:false});
+  }
+  get data(){return inkDoc(this.key,this.minH,this.el.clientWidth||700)}
+  fit(){
+    const w=this.el.clientWidth||700,h=Math.round(w*this.data.h),r=window.devicePixelRatio||1;
+    this.el.style.height=h+"px";this.cv.width=Math.round(w*r);this.cv.height=Math.round(h*r);
+    this.ctx.setTransform(r,0,0,r,0,0);this.w=w;this.redraw();
+  }
+  redraw(){this.ctx.clearRect(0,0,this.w,this.w*this.data.h+10);this.data.strokes.forEach(s=>drawStroke(this.ctx,s,this.w))}
+  pt(e){const b=this.cv.getBoundingClientRect(),k=1000/this.w;
+    const p=e.pointerType==="pen"?(e.pressure||.5):.5;
+    return[Math.round((e.clientX-b.left)*k*10)/10,Math.round((e.clientY-b.top)*k*10)/10,Math.round(p*100)]}
+  down(e){
+    if(e.pointerType==="pen")S.penSeen=true;
+    if(e.pointerType==="touch"&&S.penSeen){this.scrollY=e.clientY;return}
+    e.preventDefault();try{this.cv.setPointerCapture(e.pointerId)}catch(_){}
+    if(S.ink.tool==="eraser"){this.erasing=[];this.erase(e);return}
+    const cols=inkColors(),ci=Math.min(S.ink.color,cols.length-1);
+    this.cur={c:cols[ci][1],s:SIZES[S.ink.size][1],pts:this.pt(e)};if(cols[ci][0]==="Highlighter")this.cur.hl=1;
+    drawStroke(this.ctx,this.cur,this.w);
+  }
+  move(e){
+    if(this.scrollY!=null){window.scrollBy(0,this.scrollY-e.clientY);this.scrollY=e.clientY;return}
+    if(this.erasing){e.preventDefault();this.erase(e);return}
+    if(!this.cur)return;e.preventDefault();
+    const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+    for(const ev of evs.length?evs:[e]){const p=this.pt(ev),a=this.cur.pts,n=a.length;
+      if(Math.abs(p[0]-a[n-3])+Math.abs(p[1]-a[n-2])<.8)continue;a.push(...p);
+      if(this.cur.hl){this.redraw();drawStroke(this.ctx,this.cur,this.w)}
+      else{const seg={c:this.cur.c,s:this.cur.s,pts:a.slice(Math.max(0,a.length-9))};drawStroke(this.ctx,seg,this.w)}}
+  }
+  up(e){
+    if(this.scrollY!=null){this.scrollY=null;return}
+    if(this.erasing){if(this.erasing.length){(S.inkHist[this.key]=S.inkHist[this.key]||[]).push({del:this.erasing});save(this.key)}this.erasing=null;return}
+    if(!this.cur)return;
+    const st=this.cur;this.cur=null;this.data.strokes.push(st);
+    (S.inkHist[this.key]=S.inkHist[this.key]||[]).push({add:st});
+    this.redraw();save(this.key);
+  }
+  erase(e){
+    const[x,y]=this.pt(e),r=14,d=this.data,keep=[];
+    d.strokes.forEach(s=>{let hit=false;for(let i=0;i<s.pts.length;i+=3)if(Math.abs(s.pts[i]-x)<r&&Math.abs(s.pts[i+1]-y)<r){hit=true;break}
+      if(hit)this.erasing.push(s);else keep.push(s)});
+    if(keep.length!==d.strokes.length){d.strokes=keep;this.redraw()}
+  }
+}
+function mountInks(){document.querySelectorAll(".inkpad").forEach(el=>new Pad(el))}
+let inkResizeT;
+window.addEventListener("resize",()=>{clearTimeout(inkResizeT);inkResizeT=setTimeout(()=>document.querySelectorAll(".inkpad").forEach(el=>{if(el._pad&&el.clientWidth!==el._pad.w)el._pad.fit()}),150)});
+Object.assign(A,{
+  mode:(v,el)=>{S.modes[v]=el.dataset.m;savePrefs();render()},
+  inkColor:v=>{S.ink.color=Number(v);S.ink.tool="pen";savePrefs();render()},
+  inkSize:v=>{S.ink.size=Number(v);if(S.ink.tool==="eraser")S.ink.tool="pen";savePrefs();render()},
+  inkEraser:()=>{S.ink.tool=S.ink.tool==="eraser"?"pen":"eraser";savePrefs();render()},
+  inkUndo:v=>{const h=S.inkHist[v],d=S.docs[v];if(!h||!h.length||!d)return;const last=h.pop();
+    if(last.add)d.strokes=d.strokes.filter(s=>s!==last.add);else if(last.del)d.strokes=d.strokes.concat(last.del);
+    save(v);render()},
+  inkClear:v=>{if(S.confirm!=="clear"+v){S.confirm="clear"+v;render();return}S.confirm=null;const d=S.docs[v];if(d&&d.strokes.length){(S.inkHist[v]=S.inkHist[v]||[]).push({del:d.strokes});d.strokes=[];save(v)}render()},
+  inkMore:v=>{const d=S.docs[v];if(d){d.h+=.7;save(v);render()}}
+});
+
+/* ---------- habit boxes that colour themselves ---------- */
+const habitOn=(k,hid)=>{const d=peekDay(k);return!!(d&&d.habits&&d.habits[hid])};
+const doneColour=k=>{const p=pal(k);return mix(p.a,p.ink,.55)};
+function hbox(k,hid,label){
+  const on=habitOn(k,hid),fut=k>todayKey();
+  return `<span class="hb ${on?"on":""} ${fut?"fut":""}" style="${on?"background:"+doneColour(k):""}" title="${esc(label)}"></span>`;
+}
+function habitGrid(keys,head){
+  const st=doc("settings");
+  return `<div class="scroll"><table class="hgrid"><thead><tr><th class="l">Habit</th>${keys.map(head).join("")}</tr></thead>
+    <tbody>${st.habits.map(h=>`<tr><td class="l">${esc(h.name)}</td>${keys.map(k=>`<td>${hbox(k,h.id,h.name+", "+fmt(k,{day:"numeric",month:"short"}))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+function bestStreak(keys,hid){let b=0,c=0;keys.forEach(k=>{if(habitOn(k,hid)){c++;b=Math.max(b,c)}else c=0});return b}
+
+function vYear(){
+  const y=parse(S.view).getFullYear(),st=doc("settings"),t=todayKey();
+  const keys=[];for(let d=new Date(y,0,1);d.getFullYear()===y;d.setDate(d.getDate()+1))keys.push(dkey(d));
+  const past=keys.filter(k=>k<=t),ss=keys.map(dayStats),sum=f=>ss.reduce((a,s)=>a+f(s),0);
+  const sel=S.yhab&&st.habits.some(h=>h.id===S.yhab)?S.yhab:"all";
+  const yt=doc("yt").videos.filter(v=>inRange(v.posted,keys[0],keys[keys.length-1])).length;
+  const apps=doc("jobs").apps.filter(a=>inRange(a.date,keys[0],keys[keys.length-1])&&a.status!=="Saved").length;
+  let rows="";
+  for(let m=0;m<12;m++){
+    const n=new Date(y,m+1,0).getDate();let cells="";
+    for(let d=1;d<=31;d++){
+      if(d>n){cells+=`<span class="yb none"></span>`;continue}
+      const k=dkey(new Date(y,m,d)),s=ss[keys.indexOf(k)],p=pal(k),fut=k>t;
+      let bg="";
+      if(sel==="all"){const pct=s.habN?s.hab/s.habN:0;if(pct>0)bg=mix(p.a,p.ink,.15+.6*pct)}
+      else if(habitOn(k,sel))bg=doneColour(k);
+      cells+=`<button class="yb ${fut?"fut":""} ${k===t?"today":""}" style="${bg?"background:"+bg:""}" data-act="go" data-v="${k}" aria-label="${fmt(k,{day:"numeric",month:"long"})}"></button>`;
+    }
+    rows+=`<div class="yrow"><span class="ym">${new Date(y,m,1).toLocaleDateString(undefined,{month:"short"})}</span><div class="ycells">${cells}</div></div>`;
+  }
+  return `
+  <div class="head fade">${archScene("mtn")}<div><div class="eyebrow">Yearly · fills itself in</div><h1>My ${y}<br>in colour</h1>
+    <p class="lede">Every habit you tick on your daily page colours its box here. Tap any box to open that day.</p></div></div>
+  <section class="box">
+    <div class="chips"><button class="chip ${sel==="all"?"on":""}" data-act="yhab" data-v="all">All habits</button>${st.habits.map(h=>`<button class="chip ${sel===h.id?"on":""}" data-act="yhab" data-v="${h.id}">${esc(h.name)}</button>`).join("")}</div>
+    <div class="scroll"><div class="year">${rows}</div></div>
+    <p class="small muted" style="margin:0">${sel==="all"?"Darker boxes mean more habits kept that day.":"Coloured boxes are the days you kept this habit."}</p>
+  </section>
+  <div class="stats">
+    <div class="stat"><b>${ss.filter(s=>s.wrote).length}</b><span>journal days</span></div>
+    <div class="stat"><b>${sum(s=>s.grat)}</b><span>gratitude slips</span></div>
+    <div class="stat"><b>${sum(s=>s.done)}</b><span>to-dos done</span></div>
+    <div class="stat"><b>${yt}</b><span>videos posted</span></div>
+    <div class="stat"><b>${apps}</b><span>applications</span></div>
+  </div>
+  <section class="box a"><h2>Habits this year</h2>
+    ${st.habits.map(h=>{const c=past.filter(k=>habitOn(k,h.id)).length;return `<div style="display:flex;flex-direction:column;gap:5px"><div class="boxhead small"><span>${esc(h.name)}</span><span class="muted">${c} days · best streak ${bestStreak(past,h.id)}</span></div><div class="bar"><i style="width:${Math.min(100,Math.round(100*c/Math.max(1,past.length)))}%"></i></div></div>`}).join("")}
+  </section>
+  <p class="footline">Little by little, a whole year of growing.</p>`;
+}
+A.yhab=v=>{S.yhab=v;render()};
+
+/* ---------- little celebrations ---------- */
+function habitStreak(k,hid){let n=0,c=k;while(habitOn(c,hid)){n++;c=addDays(c,-1)}return n}
+function allHabitsDone(k){const st=doc("settings"),d=peekDay(k);return st.habits.length>0&&!!d&&st.habits.every(h=>d.habits&&d.habits[h.id])}
+function allStreak(k){let n=0,c=k;while(allHabitsDone(c)){n++;c=addDays(c,-1)}return n}
+const flowerSVG=(c1,c2)=>`<svg viewBox="0 0 40 40" aria-hidden="true">${[0,72,144,216,288].map(r=>`<ellipse cx="20" cy="10" rx="7" ry="10" fill="${c1}" transform="rotate(${r} 20 20)"/>`).join("")}<circle cx="20" cy="20" r="6" fill="${c2}"/></svg>`;
+function celebrate(title,line){
+  document.getElementById("bloom")?.remove();
+  const p=pal(S.view),cols=[p.a,p.b,mix(p.a,p.ink,.3),mix(p.b,"#F29A5C",.35),"#ffffff"];
+  const calm=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let petals="";
+  if(!calm)for(let i=0;i<34;i++){
+    const ang=Math.random()*Math.PI*2,dist=160+Math.random()*260,x=Math.cos(ang)*dist,y=Math.sin(ang)*dist-80,size=18+Math.random()*26;
+    petals+=`<span class="petal" style="--x:${x.toFixed(0)}px;--y:${y.toFixed(0)}px;--r:${(Math.random()*540-270).toFixed(0)}deg;--d:${(Math.random()*.25).toFixed(2)}s;width:${size.toFixed(0)}px;height:${size.toFixed(0)}px">${flowerSVG(cols[i%5],cols[(i+2)%5])}</span>`;
+  }
+  const el=document.createElement("div");el.id="bloom";el.setAttribute("role","status");
+  el.innerHTML=`${petals}<div class="bloomcard"><div class="bigflower">${flowerSVG(p.a,mix(p.b,"#F29A5C",.45))}</div><div class="bt">${title}</div><div class="bl">${line}</div></div>`;
+  el.addEventListener("click",()=>el.remove());
+  document.body.appendChild(el);
+  setTimeout(()=>{el.classList.add("out");setTimeout(()=>el.remove(),500)},4200);
+}
+function checkHabitWin(k,hid){
+  const st=doc("settings"),h=st.habits.find(x=>x.id===hid);
+  if(allHabitsDone(k)){const s=allStreak(k);
+    if(s>=7&&s%7===0)return celebrate(s+" perfect days in a row","Every habit, every day. You are flourishing.");
+    return celebrate("All habits done today","You kept every promise to yourself. That's how big dreams happen.");}
+  const s=habitStreak(k,hid);
+  if(h&&s>=7&&s%7===0)celebrate(s+"-day streak","“"+esc(h.name)+"” for "+s+" days in a row. Keep blooming.");
+}
+{const old=A.habit;A.habit=v=>{const was=habitOn(S.view,v);old(v);if(!was)checkHabitWin(S.view,v)}}
+{const old=A.claim;A.claim=()=>{const d=peekDay(S.view),was=d&&d.man&&d.man.claimed;old();if(!was){const s=claimedStreak(S.view);if(s>=7&&s%7===0)celebrate(s+" days of believing","You've claimed your affirmation "+s+" days in a row.")}}}
+
+/* ---------- backup and restore ---------- */
+function toast(msg){
+  document.getElementById("toast")?.remove();
+  const t=document.createElement("div");t.id="toast";t.setAttribute("role","status");t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>{t.classList.add("out");setTimeout(()=>t.remove(),400)},3200);
+}
+async function exportBackup(){
+  const name="flourish-backup-"+todayKey()+".json";
+  const data=JSON.stringify({app:"flourish",version:1,savedAt:new Date().toISOString(),docs:S.docs});
+  try{
+    if(window.claude&&window.claude.use){const dl=await claude.use("downloads");
+      if(dl){try{await dl.save({filename:name,data});toast("Backup saved: "+name);return}catch(e){if(e&&e.code==="declined")return}}}
+  }catch(e){}
+  try{
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;
+    document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+    toast("Backup saved: "+name);
+  }catch(e){toast("The backup couldn't be saved on this device.")}
+}
+function restoreBackup(file){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    let o;try{o=JSON.parse(fr.result)}catch(e){toast("That file isn't a Flourish backup.");return}
+    if(!o||o.app!=="flourish"||!o.docs){toast("That file isn't a Flourish backup.");return}
+    let n=0;
+    for(const k in o.docs){const inc=o.docs[k],cur=S.docs[k];
+      if(!cur||(inc._t||0)>(cur._t||0)){S.docs[k]=inc;n++;
+        if(S.db&&S.uid)push(k)}}
+    lsSave();render();
+    toast(n?"Restored "+n+" page"+(n>1?"s":"")+" from your backup.":"Everything in that backup was already here.");
+  };
+  fr.readAsText(file);
+}
+document.addEventListener("change",e=>{if(e.target.id==="restore-file"&&e.target.files&&e.target.files[0]){restoreBackup(e.target.files[0]);e.target.value=""}});
+A.backup=()=>exportBackup();
+
+render();
+connect();
+</script>
+
+</body>
+</html>
