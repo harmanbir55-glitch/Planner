@@ -182,6 +182,7 @@ h2{font-family:var(--serif);font-weight:600;font-size:1.2rem;color:var(--deep);m
 .jar .body span{position:absolute;width:21px;height:21px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--deep) 30%,transparent)}
 .jar .label{position:absolute;left:28px;right:28px;top:62px;padding:6px 0;background:var(--b);border-radius:6px;font-family:var(--hand);font-size:1.4rem;color:var(--deep);text-align:center}
 .slip{background:var(--paper);border-radius:14px;padding:12px 16px;border:1.5px dashed var(--ink);text-align:center}
+.slip .inkthumb{display:block;width:100%;max-width:300px;max-height:180px;margin:0 auto 6px}
 
 /* ---- week / month ---- */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
@@ -658,7 +659,7 @@ function vToday(){
   const k=S.view,id="d-"+k,d=peekDay(k)||newDay(),st=doc("settings");
   const done=d.todos.filter(t=>t.done).length,hab=st.habits.filter(x=>d.habits[x.id]).length;
   const g=gformat(k),pr=practice(k);
-  const gcount=(d.grat.items||[]).filter(Boolean).length+(d.grat.note?1:0);
+  const gcount=(d.grat.items||[]).filter(Boolean).length+(d.grat.note?1:0)+(d.grat.hand?1:0)+gratInk(k);
   return `
   <div class="head fade">${archScene()}
     <div><div class="eyebrow">Daily page · ${fmt(k,{weekday:"long"})}</div><h1>Soft plans<br>for today</h1>
@@ -714,18 +715,49 @@ function vJournal(){
   <p class="footline">The page is yours. Nothing has to be perfect.</p>`;
 }
 
+/* handwritten gratitude lives in its own ink pages, so it is counted here too */
+const GRAT_INK=["grat.note","grat.hand"];
+const gratInk=k=>GRAT_INK.filter(p=>hasInk(inkKey("d-"+k,p))).length;
 function allSlips(){
-  const out=[];
-  for(const id in S.docs){if(!id.startsWith("d-"))continue;const k=id.slice(2),g=S.docs[id].grat||{};
+  const out=[],days=new Set();
+  for(const id in S.docs){
+    if(id.startsWith("d-"))days.add(id.slice(2));
+    else{const m=/^ink-d-(\d{4}-\d\d-\d\d)-grat_(note|hand)$/.exec(id);if(m)days.add(m[1])}}
+  days.forEach(k=>{const g=(S.docs["d-"+k]||{}).grat||{};
     (g.items||[]).forEach(t=>{if(t&&t.trim())out.push({t,k})});
-    if(g.note&&g.note.trim())out.push({t:(g.to?"Thank you, "+g.to+": ":"")+g.note,k});}
+    if(g.note&&g.note.trim())out.push({t:(g.to?"Thank you, "+g.to+": ":"")+g.note,k});
+    if(g.hand&&g.hand.trim())out.push({t:g.hand,k});
+    GRAT_INK.forEach(p=>{const key=inkKey("d-"+k,p);if(hasInk(key))out.push({t:p==="grat.note"&&g.to?"A handwritten thank-you to "+g.to:"Written by hand",k,ink:key})});});
   return out.sort((a,b)=>a.k<b.k?-1:1);
+}
+/* a small drawing of a handwritten slip, cropped to the writing */
+function inkSVG(key){
+  const d=S.docs[key];if(!d||!d.strokes||!d.strokes.length)return"";
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  d.strokes.forEach(st=>{for(let i=0;i<st.pts.length;i+=3){const x=st.pts[i],y=st.pts[i+1];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}});
+  const pad=14,w=Math.max(60,x1-x0+pad*2),h=Math.max(30,y1-y0+pad*2);
+  const paths=d.strokes.map(st=>{const a=st.pts;let dd="M"+a[0]+" "+a[1];for(let i=3;i<a.length;i+=3)dd+="L"+a[i]+" "+a[i+1];if(a.length<6)dd+="l.1 .1";
+    return`<path d="${dd}" stroke="${st.c}" stroke-width="${(st.s*(1000/700)*(st.hl?5:.9)).toFixed(2)}"${st.hl?' opacity=".45"':""}/>`}).join("");
+  return`<svg class="inkthumb" viewBox="${x0-pad} ${y0-pad} ${w} ${h}" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Your handwritten slip">${paths}</svg>`;
+}
+/* refresh the jar in place after a pencil stroke, without touching the writing pad */
+function jarRefresh(key){
+  if(!/^ink-d-.*-grat_(note|hand)$/.test(key))return;
+  const box=document.getElementById("jarbox");if(box)box.innerHTML=jarPanel(allSlips());
 }
 function jarHTML(slips){
   let dots="";
   slips.slice(-56).forEach((sl,i)=>{const row=Math.floor(i/7),col=i%7,j=((i*37)%9)-4,p=pal(sl.k);
     dots+=`<span style="left:${8+col*25+(row%2)*11+j}px;top:${196-row*19+((i*13)%5)}px;background:${i%2?p.a:p.b}"></span>`});
   return `<div class="jar" role="img" aria-label="Gratitude jar holding ${slips.length} slips"><div class="lid"></div><div class="neck"></div><div class="body">${dots}<div class="label">little joys</div></div></div>`;
+}
+function jarPanel(slips){
+  const pk=S.jarPick;
+  return `${jarHTML(slips)}
+      <p class="hand" style="margin:0;text-align:center">${slips.length===1?"1 little joy collected":slips.length+" little joys collected"}</p>
+      <p class="small muted" style="margin:0;text-align:center">Everything you type or write with your pencil on this page drops a pebble in the jar.</p>
+      ${slips.length?`<button class="btn sm" data-act="jarPull">Pull out a memory</button>`:""}
+      ${pk?`<div class="slip fade">${pk.ink&&hasInk(pk.ink)?inkSVG(pk.ink):`<div class="hand">${esc(pk.t)}</div>`}<div class="small muted">${fmt(pk.k,{day:"numeric",month:"long",year:"numeric"})}</div></div>`:""}`;
 }
 const STARTERS=["A person…","A small moment…","My body…","Something I learned…","A place…","A comfort…"];
 function vGratitude(){
@@ -743,6 +775,10 @@ function vGratitude(){
     body=`<h2>Three tiny joys</h2>`+JOYS.map((l,i)=>`<label style="display:flex;align-items:center;gap:10px"><span class="num">${i+1}</span>${line(id,"grat.items."+i,l+"…")}</label>`).join("");
   }else if(g.k==="senses"){
     body=`<h2>Five senses</h2>`+SENSES.map((l,i)=>`<label style="display:flex;flex-direction:column"><span class="small muted">${l}</span>${line(id,"grat.items."+i,"…")}</label>`).join("");
+  }
+  if(g.k!=="note"){
+    if(!S.modes["grat.hand"])S.modes["grat.hand"]="pen";
+    body+=`<h3 style="margin:18px 0 0">Or write a slip by hand</h3>${writeArea(id,"grat.hand","Something I'm thankful for…",160)}`;
   }else{
     body=`<h2>A thank-you note</h2>${bind(id,"grat.to","Dear…","input",'class="line hand" style="font-size:1.7rem"')}${writeArea(id,"grat.note","Thank you for…",220)}`;
   }
@@ -755,11 +791,7 @@ function vGratitude(){
   <div class="grid wide">
     <section class="box a" style="align-items:center">
       <h2 style="align-self:flex-start">My joy jar</h2>
-      ${jarHTML(slips)}
-      <p class="hand" style="margin:0;text-align:center">${slips.length===1?"1 little joy collected":slips.length+" little joys collected"}</p>
-      <p class="small muted" style="margin:0;text-align:center">Everything you write on this page drops a pebble in the jar.</p>
-      ${slips.length?`<button class="btn sm" data-act="jarPull">Pull out a memory</button>`:""}
-      ${S.jarPick?`<div class="slip fade"><div class="hand">${esc(S.jarPick.t)}</div><div class="small muted">${fmt(S.jarPick.k,{day:"numeric",month:"long",year:"numeric"})}</div></div>`:""}
+      <div id="jarbox" style="display:flex;flex-direction:column;align-items:center;gap:inherit;width:100%">${jarPanel(slips)}</div>
     </section>
     <section class="box">${body}</section>
   </div>
@@ -802,8 +834,8 @@ function vManifest(){
 
 function dayStats(k){
   const d=peekDay(k),st=doc("settings"),ink=hasInk(inkKey("d-"+k,"journal"));
-  if(!d)return{todos:0,done:0,hab:0,habN:st.habits.length,words:0,wrote:ink,grat:0,mood:""};
-  const grat=(d.grat.items||[]).filter(x=>x&&x.trim()).length+(d.grat.note&&d.grat.note.trim()?1:0);
+  if(!d)return{todos:0,done:0,hab:0,habN:st.habits.length,words:0,wrote:ink,grat:gratInk(k),mood:""};
+  const grat=(d.grat.items||[]).filter(x=>x&&x.trim()).length+(d.grat.note&&d.grat.note.trim()?1:0)+(d.grat.hand&&d.grat.hand.trim()?1:0)+gratInk(k);
   return{todos:d.todos.length,done:d.todos.filter(t=>t.done).length,hab:st.habits.filter(x=>d.habits&&d.habits[x.id]).length,habN:st.habits.length,words:words(d.journal),wrote:ink||words(d.journal)>0,grat,mood:d.mood};
 }
 const inRange=(date,a,b)=>date&&date>=a&&date<=b;
@@ -993,7 +1025,8 @@ const A={
  mood:v=>{const id="d-"+S.view,d=doc(id);d.mood=d.mood===v?"":v;save(id);render()},
  jarAdd:()=>{const t=val("jar-new");if(!t)return;const id="d-"+S.view;doc(id).grat.items.push(t);save(id);render();document.getElementById("jar-new")?.focus()},
  slipDel:v=>{const id="d-"+S.view;doc(id).grat.items.splice(v,1);save(id);render()},
- jarPull:()=>{const s=allSlips();if(!s.length)return;let p;do{p=s[Math.floor(Math.random()*s.length)]}while(s.length>1&&S.jarPick&&p.t===S.jarPick.t);S.jarPick=p;render()},
+ jarPull:()=>{const s=allSlips();if(!s.length)return;const same=x=>S.jarPick&&x.k===S.jarPick.k&&x.t===S.jarPick.t&&x.ink===S.jarPick.ink;
+   const pool=s.length>1?s.filter(x=>!same(x)):s;S.jarPick=(pool.length?pool:s)[Math.floor(Math.random()*(pool.length||s.length))];render()},
  claim:()=>{const id="d-"+S.view,d=doc(id);d.man.claimed=!d.man.claimed;save(id);render()},
  c369:()=>{const id="d-"+S.view,d=doc(id);d.man.c369=Math.min(18,(d.man.c369||0)+1);save(id);render()},
  c369reset:()=>{const id="d-"+S.view;doc(id).man.c369=0;save(id);render()},
@@ -1142,11 +1175,11 @@ class Pad{
   }
   up(e){
     if(this.scrollY!=null){this.scrollY=null;return}
-    if(this.erasing){if(this.erasing.length){(S.inkHist[this.key]=S.inkHist[this.key]||[]).push({del:this.erasing});save(this.key)}this.erasing=null;return}
+    if(this.erasing){if(this.erasing.length){(S.inkHist[this.key]=S.inkHist[this.key]||[]).push({del:this.erasing});save(this.key);jarRefresh(this.key)}this.erasing=null;return}
     if(!this.cur)return;
     const st=this.cur;this.cur=null;this.data.strokes.push(st);
     (S.inkHist[this.key]=S.inkHist[this.key]||[]).push({add:st});
-    this.redraw();save(this.key);
+    this.redraw();save(this.key);jarRefresh(this.key);
   }
   erase(e){
     const[x,y]=this.pt(e),r=14,d=this.data,keep=[];
